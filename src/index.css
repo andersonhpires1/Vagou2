@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  --accent-color: #10b981;
+  --brand-primary: #D97706;
+  --brand-secondary: #1E293B;
+  --brand-bg: #0B0F17;
+  --brand-accent: #F59E0B;
+  --brand-text-primary: #FFFFFF;
+  --brand-text-muted: #94A3B8;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Custom accent utilities */
+.bg-accent { background-color: var(--accent-color); }
+.border-accent { border-color: var(--accent-color); }
+.hover\:bg-accent:hover { background-color: var(--accent-color); }
+.hover\:border-accent:hover { border-color: var(--accent-color); }
+.bg-accent-subtle { background-color: color-mix(in srgb, var(--accent-color), white 80%) !important; }
+.border-accent-subtle { border-color: color-mix(in srgb, var(--accent-color), white 50%) !important; }
+.bg-nav-light-theme { 
+  background-color: var(--accent-color) !important; 
+  border-top-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Specific status colors that must never be altered by theme accent */
+.status-green-bg { background-color: #059669 !important; border-color: #047857 !important; }
+.status-blue-bg { background-color: #2563eb !important; border-color: #1d4ed8 !important; }
+.status-amber-bg { background-color: #fbbf24 !important; border-color: #f59e0b !important; }
+.status-rose-bg { background-color: #e11d48 !important; border-color: #be123c !important; }
+
+/* Global overrides: Backgrounds, Borders and Rings use the theme's selected color */
+.bg-emerald-500, .bg-emerald-600, .bg-emerald-400, .bg-\[\#20C933\], [class*="bg-[#20C933]"] { background-color: var(--accent-color) !important; }
+.hover\:bg-emerald-600:hover, .hover\:bg-\[\#1bb32d\]:hover { background-color: var(--accent-color) !important; }
+.border-emerald-500, .border-emerald-600, .border-\[\#20C933\], [class*="border-[#20C933]"] { border-color: var(--accent-color) !important; }
+.border-emerald-500\/30, .border-emerald-500\/40, .border-emerald-500\/50 { border-color: color-mix(in srgb, var(--accent-color), transparent 60%) !important; }
+.bg-emerald-400\/10, .bg-emerald-500\/10, .bg-emerald-500\/15, .bg-emerald-500\/20, .bg-emerald-950\/90, .bg-emerald-950\/95 { background-color: color-mix(in srgb, var(--accent-color), transparent 85%) !important; }
+.bg-emerald-50, .bg-emerald-50\/80 { background-color: color-mix(in srgb, var(--accent-color), transparent 90%) !important; }
+.focus\:border-emerald-500:focus { border-color: var(--accent-color) !important; }
+
+/* Dynamic gradient for section headers (AGENDAR, etc.) */
+.from-emerald-950\/95, .from-emerald-500\/20 { --tw-gradient-from: color-mix(in srgb, var(--accent-color), black 60%) var(--tw-gradient-from-position) !important; }
+.via-emerald-900\/70, .via-emerald-500\/15 { --tw-gradient-via: color-mix(in srgb, var(--accent-color), transparent 75%) var(--tw-gradient-via-position) !important; }
+
+/* Text Color Rules: In Light Mode, use accent color for text. In Dark Mode, texts and SVGs are PURE WHITE */
+.text-white, .dark .text-white { color: #ffffff !important; }
+.dark svg.text-white, .dark .text-white svg { color: #ffffff !important; stroke: currentColor; }
+
+html:not(.dark) .text-emerald-500,
+html:not(.dark) .text-emerald-400,
+html:not(.dark) .text-emerald-600,
+html:not(.dark) .text-accent,
+html:not(.dark) .text-\[\#20C933\],
+html:not(.dark) .text-\[\#087A2A\],
+html:not(.dark) [class*="text-[#20C933]"] {
+  color: var(--accent-color) !important;
+}
+
+.dark .text-emerald-400,
+.dark .text-emerald-500,
+.dark .text-emerald-600,
+.dark .text-accent,
+.dark .text-\[\#20C933\],
+.dark .text-\[\#087A2A\],
+.dark [class*="text-[#20C933]"] {
+  color: #ffffff !important;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--brand-bg);
+  color: var(--brand-text-primary);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Pulse animation for live radar slots */
+@keyframes radar-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.08);
+  }
+}
+
+.animate-radar {
+  animation: radar-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Minimum 48px touch targets for salon countertop operation */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
