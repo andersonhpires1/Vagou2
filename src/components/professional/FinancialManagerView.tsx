@@ -6,18 +6,20 @@ import {
   Wallet, Banknote, QrCode
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { BookingAppointment, PaymentMethod, ProfessionalTeamMember } from '../../types';
+import { BookingAppointment, PaymentMethod, ProfessionalTeamMember, UserPersona } from '../../types';
 import { hapticLight, hapticSuccess } from '../../utils/haptics';
 
 export interface FinancialManagerViewProps {
   appointments: BookingAppointment[];
   onUpdateAppointments?: (appointments: BookingAppointment[]) => void;
   salonName?: string;
+  currentPersona?: UserPersona;
 }
 
 export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
   appointments = [],
   salonName = 'Barbearia Rota 99',
+  currentPersona = 'admin',
 }) => {
   const { isDark } = useTheme();
 
@@ -545,34 +547,11 @@ export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
             ))}
           </div>
 
-          <p className="text-[10px] text-slate-500 text-center pt-1">
+          <p className="text-[10px] text-slate-500 text-center pt-1 pb-4">
             As taxas de comissão são ajustadas na aba "Equipe" pelo administrador.
           </p>
         </div>
 
-      </div>
-
-      {/* 4. Rodapé Fixo de Resumo e Ação */}
-      <div className={`p-3 border-t sticky bottom-0 z-20 flex items-center justify-between gap-3 ${
-        isDark ? 'border-slate-800 bg-slate-950/95' : 'border-slate-200 bg-white/95'
-      } backdrop-blur-xs`}>
-        <div>
-          <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-            Caixa Fechado ({periodFilter})
-          </span>
-          <span className="text-sm font-black font-mono text-emerald-400">
-            R$ {totalRealizedRevenue.toFixed(2).replace('.', ',')}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleShareWhatsApp}
-          className="py-2 px-3 rounded bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center gap-1.5 shadow-xs active:scale-98"
-        >
-          <Share2 className="w-3.5 h-3.5 text-white" />
-          <span>Exportar Relatório</span>
-        </button>
       </div>
     </div>
   );

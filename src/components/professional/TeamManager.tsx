@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Users, UserPlus, ShieldCheck, User as UserIcon, 
-  Trash2, Edit2, X, Phone, Briefcase, Scissors, Percent
+  Trash2, Edit2, X, Phone, Briefcase, Scissors, Percent,
+  Clock, Calendar
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { hapticLight, hapticSuccess, hapticMedium, ProfessionalTeamMember, ProfessionalRole } from '../../types';
+import { hapticLight, hapticSuccess, hapticMedium, ProfessionalTeamMember, ProfessionalRole, ProfessionalWorkSchedule } from '../../types';
 
 // Mock Data inicial
 const INITIAL_TEAM: ProfessionalTeamMember[] = [
@@ -13,9 +14,16 @@ const INITIAL_TEAM: ProfessionalTeamMember[] = [
     name: 'Você (Dono)',
     role: 'admin',
     avatarUrl: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=150&q=80',
-    phone: '(11) 99999-9999',
+    phone: '(41) 99882-1140',
     specialties: ['Cabelo', 'Barba'],
     commissionRate: 100,
+    workSchedule: {
+      shiftType: 'integral',
+      shiftLabel: 'Seg a Sáb • 09h às 20h',
+      days: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab'],
+      startTime: '09:00',
+      endTime: '20:00',
+    },
     isActive: true,
     joinedAt: new Date().toISOString()
   }
@@ -44,9 +52,63 @@ export const TeamManager: React.FC = () => {
   const [formAvatarUrl, setFormAvatarUrl] = useState('');
   const [formCommissionRate, setFormCommissionRate] = useState<number>(50);
 
+  // Estados de Turno & Escala de Atendimento
+  const [formShiftType, setFormShiftType] = useState<'manha' | 'tarde' | 'integral' | 'sabados' | 'personalizado'>('integral');
+  const [formDays, setFormDays] = useState<string[]>(['seg', 'ter', 'qua', 'qui', 'sex', 'sab']);
+  const [formStartTime, setFormStartTime] = useState('09:00');
+  const [formEndTime, setFormEndTime] = useState('19:00');
+
   const saveTeam = (newTeam: ProfessionalTeamMember[]) => {
     setTeam(newTeam);
     localStorage.setItem('vagou_team_members', JSON.stringify(newTeam));
+  };
+
+  const applyShiftPreset = (type: 'manha' | 'tarde' | 'integral' | 'sabados') => {
+    hapticLight();
+    setFormShiftType(type);
+    if (type === 'manha') {
+      setFormDays(['seg', 'ter', 'qua', 'qui', 'sex']);
+      setFormStartTime('08:00');
+      setFormEndTime('14:00');
+    } else if (type === 'tarde') {
+      setFormDays(['seg', 'ter', 'qua', 'qui', 'sex']);
+      setFormStartTime('14:00');
+      setFormEndTime('22:00');
+    } else if (type === 'integral') {
+      setFormDays(['seg', 'ter', 'qua', 'qui', 'sex', 'sab']);
+      setFormStartTime('09:00');
+      setFormEndTime('19:00');
+    } else if (type === 'sabados') {
+      setFormDays(['sab']);
+      setFormStartTime('09:00');
+      setFormEndTime('18:00');
+    }
+  };
+
+  const toggleMemberDay = (d: string) => {
+    hapticLight();
+    setFormShiftType('personalizado');
+    if (formDays.includes(d)) {
+      if (formDays.length > 1) {
+        setFormDays(formDays.filter(day => day !== d));
+      }
+    } else {
+      setFormDays([...formDays, d]);
+    }
+  };
+
+  const generateShiftLabel = (type: string, days: string[], start: string, end: string): string => {
+    if (type === 'sabados' || (days.length === 1 && days[0] === 'sab')) {
+      return `Sábados • ${start} às ${end}`;
+    }
+    if (type === 'manha') return `Seg a Sex • ${start} às ${end} (Manhã)`;
+    if (type === 'tarde') return `Seg a Sex • ${start} às ${end} (Tarde/Noite)`;
+    if (type === 'integral') return `Seg a Sáb • ${start} às ${end} (Integral)`;
+    
+    const dayLabels: Record<string, string> = {
+      seg: 'Seg', ter: 'Ter', qua: 'Qua', qui: 'Qui', sex: 'Sex', sab: 'Sáb', dom: 'Dom'
+    };
+    return `${days.map(k => dayLabels[k] || k).join(', ')} • ${start} às ${end}`;
   };
 
   const handleOpenForm = (member?: ProfessionalTeamMember) => {
@@ -59,6 +121,19 @@ export const TeamManager: React.FC = () => {
       setFormSpecialties(member.specialties.join(', '));
       setFormAvatarUrl(member.avatarUrl || '');
       setFormCommissionRate(member.commissionRate ?? (member.role === 'admin' ? 100 : 50));
+      
+      // Carregar escala se houver
+      if (member.workSchedule) {
+        setFormShiftType(member.workSchedule.shiftType);
+        setFormDays(member.workSchedule.days);
+        setFormStartTime(member.workSchedule.startTime);
+        setFormEndTime(member.workSchedule.endTime);
+      } else {
+        setFormShiftType('integral');
+        setFormDays(['seg', 'ter', 'qua', 'qui', 'sex', 'sab']);
+        setFormStartTime('09:00');
+        setFormEndTime('19:00');
+      }
     } else {
       setEditingMember(null);
       setFormName('');
@@ -67,6 +142,10 @@ export const TeamManager: React.FC = () => {
       setFormSpecialties('');
       setFormAvatarUrl('');
       setFormCommissionRate(50);
+      setFormShiftType('integral');
+      setFormDays(['seg', 'ter', 'qua', 'qui', 'sex', 'sab']);
+      setFormStartTime('09:00');
+      setFormEndTime('19:00');
     }
     setIsModalOpen(true);
   };
@@ -89,6 +168,14 @@ export const TeamManager: React.FC = () => {
     const specsArray = formSpecialties.split(',').map(s => s.trim()).filter(Boolean);
     const cleanedAvatarUrl = formAvatarUrl.trim();
 
+    const workSchedule: ProfessionalWorkSchedule = {
+      shiftType: formShiftType,
+      shiftLabel: generateShiftLabel(formShiftType, formDays, formStartTime, formEndTime),
+      days: formDays,
+      startTime: formStartTime,
+      endTime: formEndTime,
+    };
+
     let updatedTeam: ProfessionalTeamMember[];
     
     if (editingMember) {
@@ -99,6 +186,7 @@ export const TeamManager: React.FC = () => {
         phone: formPhone,
         specialties: specsArray,
         commissionRate: formCommissionRate,
+        workSchedule,
         avatarUrl: cleanedAvatarUrl || undefined
       } : m);
     } else {
@@ -109,6 +197,7 @@ export const TeamManager: React.FC = () => {
         phone: formPhone,
         specialties: specsArray,
         commissionRate: formCommissionRate,
+        workSchedule,
         avatarUrl: cleanedAvatarUrl || undefined,
         isActive: true,
         joinedAt: new Date().toISOString()
@@ -128,9 +217,16 @@ export const TeamManager: React.FC = () => {
     hapticMedium();
   };
 
+  const handleToggleAdminPrivilege = (member: ProfessionalTeamMember) => {
+    hapticLight();
+    const newRole: ProfessionalRole = member.role === 'admin' ? 'professional' : 'admin';
+    const updatedTeam = team.map(m => m.id === member.id ? { ...m, role: newRole } : m);
+    saveTeam(updatedTeam);
+  };
+
   const roleLabels = {
     admin: { label: 'Administrador', icon: ShieldCheck, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    professional: { label: 'Profissional', icon: Scissors, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    professional: { label: 'Membro', icon: Scissors, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
     receptionist: { label: 'Recepcionista', icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' }
   };
 
@@ -200,12 +296,29 @@ export const TeamManager: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {!isMainAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleAdminPrivilege(member)}
+                      className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border transition cursor-pointer flex items-center gap-1 active:scale-95 ${
+                        member.role === 'admin'
+                          ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
+                          : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
+                      }`}
+                      title={member.role === 'admin' ? 'Tornar Membro comum' : 'Promover a Administrador (pode gerenciar o estabelecimento)'}
+                    >
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>{member.role === 'admin' ? 'Tornar Membro' : 'Promover Admin'}</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => handleOpenForm(member)}
                     className={`p-2 rounded-md transition cursor-pointer ${
                       isDark ? 'hover:bg-slate-800 text-slate-400 hover:text-emerald-400' : 'hover:bg-slate-100 text-slate-500 hover:text-emerald-500'
                     }`}
+                    title="Editar dados"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -219,6 +332,7 @@ export const TeamManager: React.FC = () => {
                       className={`p-2 rounded-md transition cursor-pointer ${
                         isDark ? 'hover:bg-rose-500/10 text-slate-400 hover:text-rose-400' : 'hover:bg-rose-50 text-slate-500 hover:text-rose-500'
                       }`}
+                      title="Excluir da equipe"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -226,8 +340,8 @@ export const TeamManager: React.FC = () => {
                 </div>
               </div>
 
-              {/* Informações Extras (Telefone / Especialidades) */}
-              <div className="flex items-center gap-4 border-t pt-2 border-slate-800/40 text-[11px] font-medium text-slate-400">
+              {/* Informações Extras (Telefone / Especialidades / Turno) */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-2 border-slate-800/40 text-[11px] font-medium text-slate-400">
                 {member.phone && (
                   <div className="flex items-center gap-1">
                     <Phone className="w-3.5 h-3.5" />
@@ -238,6 +352,12 @@ export const TeamManager: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <Scissors className="w-3.5 h-3.5" />
                     <span className="truncate max-w-[150px]">{member.specialties.join(', ')}</span>
+                  </div>
+                )}
+                {member.workSchedule && (
+                  <div className="flex items-center gap-1 text-emerald-400 font-medium">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-[10.5px] truncate max-w-[200px]">{member.workSchedule.shiftLabel}</span>
                   </div>
                 )}
               </div>
@@ -299,9 +419,9 @@ export const TeamManager: React.FC = () => {
                   onChange={(e) => setFormRole(e.target.value as ProfessionalRole)}
                   className={`w-full px-3 py-2.5 rounded border text-sm appearance-none ${isDark ? 'bg-slate-900 border-slate-800 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'} outline-hidden`}
                 >
-                  <option value="professional">Profissional (Vê apenas própria agenda)</option>
+                  <option value="admin">Administrador (Acesso total + Botão Gerenciar)</option>
+                  <option value="professional">Membro (Atendimento e agenda própria)</option>
                   <option value="receptionist">Recepcionista (Vê todas as agendas, sem financeiro)</option>
-                  <option value="admin">Administrador (Acesso Total)</option>
                 </select>
               </div>
 
@@ -364,6 +484,112 @@ export const TeamManager: React.FC = () => {
                 <p className={`text-[10px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                   Percentual repassado ao profissional em cada atendimento concluído.
                 </p>
+              </div>
+
+              {/* Turno & Escala de Atendimento */}
+              <div className={`p-2.5 rounded border space-y-2 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                    Turno & Escala de Atendimento
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-semibold">
+                    {formStartTime} às {formEndTime}
+                  </span>
+                </div>
+
+                {/* Presets Rápidos de Turno */}
+                <div className="grid grid-cols-2 gap-1">
+                  {[
+                    { key: 'manha', label: 'Manhã (08h - 14h)' },
+                    { key: 'tarde', label: 'Tarde/Noite (14h - 22h)' },
+                    { key: 'integral', label: 'Integral (09h - 19h)' },
+                    { key: 'sabados', label: 'Apoio Sábados (09h - 18h)' },
+                  ].map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => applyShiftPreset(p.key as any)}
+                      className={`px-2 py-1.5 rounded text-[10px] font-bold border text-left transition cursor-pointer ${
+                        formShiftType === p.key
+                          ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs'
+                          : isDark
+                          ? 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Seletor de Dias do Profissional */}
+                <div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Dias de Trabalho
+                  </span>
+                  <div className="grid grid-cols-7 gap-1">
+                    {[
+                      { key: 'seg', label: 'Seg' },
+                      { key: 'ter', label: 'Ter' },
+                      { key: 'qua', label: 'Qua' },
+                      { key: 'qui', label: 'Qui' },
+                      { key: 'sex', label: 'Sex' },
+                      { key: 'sab', label: 'Sáb' },
+                      { key: 'dom', label: 'Dom' },
+                    ].map((d) => {
+                      const isActive = formDays.includes(d.key);
+                      return (
+                        <button
+                          key={d.key}
+                          type="button"
+                          onClick={() => toggleMemberDay(d.key)}
+                          className={`py-1 rounded text-[10px] font-bold border transition cursor-pointer text-center ${
+                            isActive
+                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs'
+                              : isDark
+                              ? 'bg-slate-950 border-slate-800 text-slate-500'
+                              : 'bg-white border-slate-200 text-slate-400'
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Horário Início / Fim */}
+                <div className="flex items-center gap-2 pt-1 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400">Das</span>
+                    <input
+                      type="time"
+                      value={formStartTime}
+                      onChange={(e) => {
+                        setFormShiftType('personalizado');
+                        setFormStartTime(e.target.value);
+                      }}
+                      className={`px-1.5 py-0.5 rounded border text-[11px] font-mono outline-hidden ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-slate-400">às</span>
+                    <input
+                      type="time"
+                      value={formEndTime}
+                      onChange={(e) => {
+                        setFormShiftType('personalizado');
+                        setFormEndTime(e.target.value);
+                      }}
+                      className={`px-1.5 py-0.5 rounded border text-[11px] font-mono outline-hidden ${
+                        isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-300 text-slate-900'
+                      }`}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="pt-2">

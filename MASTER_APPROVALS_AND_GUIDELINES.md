@@ -126,6 +126,19 @@ O `SalonProfileView.tsx` é a peça central da experiência do salão dentro do 
 - **Etapa 4:** Resumo, dados do cliente e confirmação imediata.
 - **Botão Fixo Persistente:** O botão de avanço/confirmação fica permanentemente visível no rodapé do modal (`sticky bottom-0 z-20`), permitindo ao usuário rolar listas longas sem perder o botão de toque.
 
+### D. Tríade de Personalidades & Hub Unificado "Personalizar Salão"
+- **Seletor Tríade no Cabeçalho Superior:**
+  - Substitui o antigo seletor binário "Ger. / Púb." por um seletor nativo de 3 perfis: **Cliente** | **Profissional** | **Admin**.
+  - **Cliente:** Visualização 100% pública (Landing page com scroll snap, catálogo de serviços, equipe, espaço e agendamento rápido). O menu lateral oculta expressamente botões de acesso gerencial ("Acesso do Salão / Gestão"), mantendo a experiência focada estritamente no consumidor final.
+  - **Profissional (Colaborador):** Visão operacional (Agenda de atendimentos do dia, comissões individuais, sem acesso a alterar dados estruturais da empresa).
+  - **Admin (Dono do Estabelecimento):** Visão completa de gestão (Dashboard gerencial, Financeiro completo, menu administrativo e botão exclusivo **"Personalizar Salão"**).
+- **Hub Unificado "Personalizar Salão" (`SalonCustomizationHub`):**
+  - Unifica os antigos botões dispersos ("Espaço", "Serviços", "Equipe") em uma central única com abas internas segmentadas:
+    - **Espaço:** Dados do salão, horários de funcionamento, banner e logotipo.
+    - **Serviços:** Catálogo de procedimentos, preços e durações.
+    - **Equipe:** Gestão de membros, especialidades e taxas de comissão.
+  - O botão de acesso fica no topo do painel gerencial do Administrador com ícone `Sparkles` do `lucide-react`, e permite retornar ao dashboard com um único toque no botão "Voltar ao Painel".
+
 ---
 
 ## 🗺️ 5. Geolocalização, GIS e Mídia em 3 Níveis

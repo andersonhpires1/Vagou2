@@ -76,12 +76,29 @@ export interface BookingAppointment {
   blockReason?: string;
 }
 
+export type UserPersona = 'cliente' | 'pro' | 'profissional' | 'admin';
+
 export interface UserProfile {
   name: string;
   email: string;
   phone: string;
   address: string;
   avatarUrl?: string;
+}
+
+export interface DayOperatingHours {
+  dayKey: 'seg' | 'ter' | 'qua' | 'qui' | 'sex' | 'sab' | 'dom';
+  dayLabel: string;
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+}
+
+export interface OperatingSchedule {
+  preset: 'salao' | 'comercial' | 'todos' | 'personalizado';
+  days: DayOperatingHours[];
+  defaultOpenTime?: string;
+  defaultCloseTime?: string;
 }
 
 export interface SalonAdminSettings {
@@ -95,6 +112,28 @@ export interface SalonAdminSettings {
   salonLogo?: string; // Logo retangular horizontal para o cabeçalho do app
   salonIcon?: string; // Ícone quadrado (1:1) para o PWA (instalação no celular)
   pwaName?: string;   // Nome curto/completo exibido na tela inicial do celular
+
+  // Dados Cadastrais e Fiscais
+  razaoSocial?: string;
+  cnpj?: string;
+
+  // Localização Detalhada
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  uf?: string;
+
+  // Atendimento Inteligente
+  operatingSchedule?: OperatingSchedule;
+
+  // Responsável Legal
+  legalManagerName?: string;
+  legalManagerCpf?: string;
+  legalManagerPhone?: string;
+  legalManagerEmail?: string;
 }
 
 export interface ServiceCategoryItem {
@@ -111,6 +150,7 @@ export interface SalonProfessionalItem {
   id?: string;
   name: string;
   role?: string;
+  systemRole?: 'admin' | 'member';
   avatar?: string;
   avatarUrl?: string;
   rating?: number;
@@ -136,6 +176,14 @@ export interface CatalogServiceItem {
 
 export type ProfessionalRole = 'admin' | 'professional' | 'receptionist';
 
+export interface ProfessionalWorkSchedule {
+  shiftType: 'manha' | 'tarde' | 'integral' | 'sabados' | 'personalizado';
+  shiftLabel?: string;
+  days: string[]; // e.g. ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom']
+  startTime: string; // e.g. '08:00'
+  endTime: string; // e.g. '14:00'
+}
+
 export interface ProfessionalTeamMember {
   id: string;
   name: string;
@@ -144,6 +192,7 @@ export interface ProfessionalTeamMember {
   phone?: string;
   specialties: string[];
   commissionRate?: number; // Percentual de repasse (ex: 50 para 50%)
+  workSchedule?: ProfessionalWorkSchedule;
   isActive: boolean;
   joinedAt: string;
 }

@@ -15,70 +15,232 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
-### [2026-09-18] — Logo Retangular do Cabeçalho, Ícone PWA (1:1) & Nome do App no Smartphone
-- **Tipo:** `[Feat / UI / Visual Identity & PWA Integration]`
-- **Motivo / Solicitação:** Substituição do upload em círculo na aba "Espaço" por duas soluções distintas e complementares:
-  1. **Logo do Cabeçalho em Formato Retangular Horizontal**: para encaixar perfeitamente no cabeçalho superior do aplicativo, com simulação em tempo real da barra superior do app e substituição visual imediata no cabeçalho real.
-  2. **Ícone do PWA (Quadrado 1:1) & Nome do Aplicativo**: para quando os clientes instalarem o PWA do estabelecimento na tela inicial do celular, com simulador de tela de smartphone (mockup do ícone com cantos squircle e nome abaixo), persistência e atualização dinâmica de `document.title`, `<link rel="icon">`, `<link rel="apple-touch-icon">` e `manifest.json` dinâmico via Blob URL.
+### [2026-09-19] — Remoção da Badge Secundária do Botão "Pro" no Seletor de Persona
+- **Tipo:** `[UI / Cleanup]`
+- **Motivo / Solicitação:** Remoção da etiqueta/badge secundária interna ("Admin" / "Membro") selecionada pelo usuário no botão "Pro" do cabeçalho, mantendo o controle simétrico, limpo e enxuto entre `Cliente` e `Pro`.
 - **Arquivos Impactados:**
-  - `src/types.ts`:
-    - Adicionado `salonLogo?: string` (logo retangular do cabeçalho), `salonIcon?: string` (ícone quadrado do PWA), `pwaName?: string` (nome do app no smartphone) e `accentColor?: string` à interface `SalonAdminSettings`.
-  - `src/utils/pwaAssets.ts`:
-    - Criado utilitário dinâmico que atualiza `document.title`, `<meta name="apple-mobile-web-app-title">`, favicons, apple touch icons e gera dinamicamente um Web App Manifest via Blob URL com os dados do salão.
-  - `src/components/professional/ProfessionalSpaceManager.tsx`:
-    - Removido o contêiner circular incongruente.
-    - Seção 1 ("Logo do Cabeçalho"): área retangular com simulador fiel do topo do app (ao vivo), upload por clique ou drag-and-drop, botão de substituir e botão de remover.
-    - Seção 2 ("Ícone & App PWA Mobile"): simulador de tela inicial de smartphone com ícone squircle 1:1 e nome do aplicativo, upload do ícone quadrado, campo de nome do app com botão de sincronização com o nome do salão.
-    - Seção 3 ("Cor de Destaque"): paleta limpa com presets rápidos e seletor nativo.
-    - Seção 4 ("Dados do Estabelecimento"): campos de contato, PIN, endereço e horários.
-    - Rodapé Fixo de Ação (`sticky bottom-0 z-20`): botão de salvar em verde de alto contraste (`bg-emerald-500 text-white font-bold`) com feedback háptico.
-  - `src/components/SalonProfileView.tsx`:
-    - Cabeçalho superior atualizado para renderizar o logo retangular enviado pelo salão (`max-h-8 sm:max-h-9.5 w-auto object-contain object-left`) ou fallback tipográfico elegante.
-    - Atualização em tempo real das configurações de identidade e PWA dinâmico no salvamento e no carregamento.
-  - `src/App.tsx`:
-    - Chamada a `initializeStoredPwaAssets()` na inicialização para carregar imediatamente os ativos personalizados do PWA.
-- **Resultado:**
-  - O gestor do estabelecimento tem controle total e independente sobre a imagem horizontal do cabeçalho do app e o ícone de instalação mobile do PWA.
-  - Experiência visual impecável, flat (sem "caixa dentro de caixa") e conformidade estrita com o Protocolo Vagou (fundo verde = texto branco).
+  - `src/components/SalonProfileView.tsx`: Removida a tag interna `span:nth-of-type(2)` do botão `#persona-btn-pro`, preservando a lógica de permissões e controle de acesso RBAC nos demais componentes.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
 
-### [2026-09-18] — Visão Financeira Segmentada por Profissional & Visão Consolidada do Dono do Salão
-- **Tipo:** `[Feat / UX / Financial Hierarchy & Team Filter]`
-- **Motivo / Solicitação:** Vinculação dos valores financeiros (recebidos no momento, provisão hoje e projeção da semana) ao profissional que está logado no salão (exibindo sua respectiva comissão e atendimentos individuais), permitindo simultaneamente que o dono/gerente geral visualize os totais consolidados de todos os membros do estabelecimento e possa inspecionar colaboradores individualmente.
+### [2026-09-19] — Hub de Gerenciamento em Cards de Acesso, Integração ViaCEP, Horários Inteligentes, Escalas de Turno e Trava de Emergência na Agenda
+- **Tipo:** `[Feat / UI / Refactor]`
+- **Motivo / Solicitação:** 
+  1. Renomear a seção de "Personalizar Estabelecimento" para "Gerenciamento".
+  2. Converter as opções de abas em cards de acesso diretos (Dados do Negócio, Identidade Visual, Serviços, Equipe e Financeiro).
+  3. Módulo "Dados do Negócio": campos de Nome Fantasia, Razão Social, CNPJ mascarado, localização com busca automática por CEP (ViaCEP), preenchimento instantâneo de logradouro/bairro/cidade/UF e Responsável Legal (Nome, CPF, WhatsApp, E-mail).
+  4. Atendimento & Horários Inteligentes: presets rápidos ("Seg a Sáb (Salão)", "Seg a Sex (Comercial)", "Todos os Dias", "Personalizado"), chips de dias ativos, aplicação de horários em lote e ajuste fino individual por dia.
+  5. Módulo "Identidade Visual": cor de destaque com seletor e presets, upload de logo horizontal para cabeçalho do app com prévia ao vivo, e ícone do app (PWA) 1:1 com simulador de tela inicial mobile.
+  6. Gestão de Equipe com Turnos e Escalas: configuração de turnos por colaborador (Manhã 08h-14h, Tarde/Noite 14h-22h, Integral 09h-19h, Apoio Sábados 09h-18h ou personalizado) com badge na visualização da equipe.
+  7. Trava de Emergência na Agenda: tanto para o estabelecimento quanto para profissionais individuais trancarem horários ou turnos completos imediatamente contra agendamentos externos.
 - **Arquivos Impactados:**
-  - `src/components/professional/ProfessionalDashboardView.tsx`:
-    - Adicionado suporte a múltiplos papéis de acesso (`userRole`: 'admin' | 'professional') e filtro de equipe (`selectedFilterPro`).
-    - Integração de barra superior de identificação com botão de troca de perfil de acesso ("Trocar Perfil").
-    - Seletor horizontal de membros da equipe para o Dono ("Todo o Salão" vs Membro específico com exibição da % de comissão).
-    - Recálculo dinâmico em tempo real de `financialProjections`, atendimentos e status considerando os agendamentos vinculados ao colaborador logado ou consolidação geral do salão.
-    - Exibição de valores brutos e comissões líquidas personalizadas para o profissional logado, e volume global com contagem de profissionais ativos para o Dono.
-    - Identificação do profissional responsável nos cards de agendamento em destaque e carrossel.
-    - Modal interativo para alternância ágil de perfis entre Dono e os colaboradores da equipe cadastrada.
-  - `src/components/SalonProfileView.tsx`:
-    - Repasse da lista de profissionais do salão (`professionals`) e identificador do usuário corrente para o componente do dashboard.
-- **Resultado:**
-  - O profissional logado tem total transparência sobre seus próprios recebimentos, comissões e previsão de faturamento pessoal.
-  - O dono do estabelecimento tem controle financeiro global completo sobre o caixa de toda a equipe e flexibilidade para alternar entre visões com um único toque.
+  - `src/types.ts`: Adicionadas interfaces `DayOperatingHours`, `OperatingSchedule`, `ProfessionalWorkSchedule` e expandida `SalonAdminSettings`.
+  - `src/components/professional/BusinessDataCardView.tsx`: Criado componente completo para dados fiscais, busca ViaCEP em tempo real com preenchimento automático, presets de horário de funcionamento e responsável legal.
+  - `src/components/professional/VisualIdentityCardView.tsx`: Criado componente de identidade visual com cor de destaque, logo do cabeçalho com prévia ao vivo e ícone mobile PWA.
+  - `src/components/professional/TeamManager.tsx`: Atualizado com gestão de turnos por colaborador (presets e seletor de dias) e exibição do turno nos cards da equipe.
+  - `src/components/professional/ProfessionalAgendaView.tsx`: Adicionados presets rápidos para Trava de Emergência Médica/Pessoal e bloqueio de turnos completos para colaboradores específicos ou para todo o estabelecimento.
+  - `src/components/professional/SalonCustomizationHub.tsx`: Transformado no Hub de Gerenciamento em cards de acesso com navegação modular e botão de retorno.
+  - `src/components/SalonProfileView.tsx`: Conectadas as props de agendamentos para o card de Financeiro e atualizados os pontos de entrada do Gerenciamento.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
 
-### [2026-09-18] — Cards de Previsões, Caixa Atual e Projeções da Semana no Dashboard Inicial
-- **Tipo:** `[UI / Feature / Financial Dashboard Overview]`
-- **Motivo / Solicitação:** Inclusão de cards analíticos no dashboard da seção inicial (imediatamente abaixo de "Próximos Clientes"): Valores recebidos até o momento atual (caixa realizado com barra de meta atingida), Provisões estimadas para hoje (faturamento agendado do dia) e Projeções para esta semana (ciclo de 7 dias com total de atendimentos previstos).
+### [2026-09-19] — Posicionamento de "Gerenciar" como Última Opção do Menu, Exigência de Reautenticação por Senha e Remoção do Ícone no Nav
+- **Tipo:** `[Security / UI / Refactor]`
+- **Motivo / Solicitação:** Atendimento aos 3 requisitos solicitados pelo usuário:
+  1. A opção "Gerenciar Estabelecimento" deve ser obrigatoriamente a última opção da lista do menu de opções (`ProfileDrawer`).
+  2. Ao clicar no botão "Gerenciar", o sistema deve solicitar novamente a mesma senha/PIN de acesso utilizada pelo usuário no login antes de conceder o acesso à personalização do estabelecimento.
+  3. Remoção do ícone/aba "Gerenciar" da barra de navegação inferior (`BottomNav`).
 - **Arquivos Impactados:**
-  - `src/components/professional/ProfessionalDashboardView.tsx`: Implementado hook de cálculo financeiro em tempo real (`financialProjections`) e renderizado bloco "Previsões & Caixa" com 3 cards responsivos, gradiente sutil, badge de meta cumprida, indicador de valores em aberto e atalho de navegação para a aba "Caixa & Comissões".
-- **Resultado:**
-  - Gestor visualiza de forma instantânea na tela inicial o dinheiro que já entrou no dia, a expectativa total de faturamento até o fechamento da jornada e a projeção semanal consolidada.
+  - `src/components/BottomNav.tsx`: Removida a aba `{ id: 'personalizar', label: 'Gerenciar', icon: Settings }` da lista de abas do estabelecimento e limpo o import não utilizado de `Settings`.
+  - `src/components/ProfileDrawer.tsx`: Reordenada a lista de opções do menu (`space-y-2`) posicionando o botão "Gerenciar Estabelecimento" estritamente como o último item da lista; adicionada prop `onRequestManage` para interceptar o clique e delegar a verificação de credenciais; limpos blocos redundantes legados.
+  - `src/components/professional/ProfessionalLoginModal.tsx`: Adicionadas props dinâmicas `title` e `description` e limpos imports de ícones não utilizados (`X`, `ShieldCheck`), permitindo reuso sofisticado como modal de revalidação de senha com título "Confirmar Senha de Acesso".
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Adicionada prop `onRequestManage` ao botão "Gerenciar" do painel Pro, acionando a solicitação de senha com fallback gracioso.
+  - `src/components/SalonProfileView.tsx`: Criado o estado `isManagePinModalOpen` e os handlers `handleRequestManage` e `handleConfirmManagePin` para validar a senha de acesso contra `adminSettings.pinCode`; atualizado `handleSelectTab` para exigir confirmação de PIN ao tentar navegar para `'personalizar'`; instanciado o modal dedicado de confirmação de senha.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
 
-### [2026-09-18] — Módulo Financeiro Integrado, Gestão de Comissões e Bloqueio de Horários (Opções A e B)
-- **Tipo:** `[Feat / Architecture / Financial & Operations]`
-- **Motivo / Solicitação:** Implementação das opções A e B: Painel de Gerenciamento Financeiro para o estabelecimento, com cálculo de receitas, taxas de plataforma, divisão de comissões por profissional da equipe, exportação via WhatsApp, bloqueio inteligente de horários de agenda e seleção rápida de forma de pagamento (PIX, Cartão Crédito/Débito, Dinheiro) na conclusão dos serviços.
+### [2026-09-19] — Simplificação do Seletor de Persona (Cliente | Pro) e Controle RBAC da Opção "Gerenciar"
+- **Tipo:** `[Feat / Security / UI]`
+- **Motivo / Solicitação:** Atendimento integral à solicitação do usuário:
+  1. Simplificação do seletor no cabeçalho para apenas 2 opções: `Cliente | Pro`.
+  2. Identificação automática de quem é cliente e quem é profissional do estabelecimento via perfil ativo.
+  3. No modo Pro, a opção "Gerenciar" (que leva à seção "Personalizar Estabelecimento") agora fica restrita exclusivamente aos profissionais com privilégio de "administrador". Membros comuns da equipe têm a opção "Gerenciar" oculta.
+  4. O super-administrador pode a qualquer momento promover ou rebaixar membros de equipe entre as funções de Administrador e Membro diretamente na gestão de equipe (`TeamManager`).
 - **Arquivos Impactados:**
-  - `src/types.ts`: Adicionado suporte a `commissionRate` em `ProfessionalTeamMember`, e campos `isBlockedSlot`, `blockReason`, `isPaid`, `paidAt`, `paymentMethod` em `BookingAppointment`.
-  - `src/components/professional/TeamManager.tsx`: Inclusão de controle de taxa de comissão individual por profissional (slider 0-100% e input numérico) com badge de identificação visual.
-  - `src/utils/bookingSlots.ts`: Refatoração da função `getAvailableSlotsForDate` para respeitar agendamentos existentes e slots bloqueados (`isBlockedSlot: true` ou status `BLOQUEADO`).
-  - `src/components/professional/FinancialManagerView.tsx`: Criação do módulo financeiro completo com métricas de faturamento líquido, taxa de intermediação, comissões a pagar por membro, divisão por método de pagamento e compartilhamento de relatório.
-  - `src/components/professional/ProfessionalDashboardView.tsx`: Inclusão de seletor segmentado no topo para alternar instantaneamente entre "Atendimentos" e "Caixa & Comissões".
-  - `src/components/professional/ProfessionalAgendaView.tsx`: Inclusão do botão e modal de "Bloquear Horário" (com motivos rápidos, duração e profissional), e fluxo de conclusão de atendimento com seleção imediata da forma de pagamento.
+  - `src/types.ts`: Atualizado `UserPersona` para `'cliente' | 'pro' | 'profissional' | 'admin'` e adicionado `systemRole` para compatibilidade com o catálogo de profissionais.
+  - `src/components/SalonProfileView.tsx`: Substituído o seletor tríplice pelo seletor binário `Cliente | Pro`. Criada a lógica reativa de resolução de privilégios (`isActiveProAdmin`, `activeProMember`, `activeProId`) com suporte a sincronização via `localStorage` e evento `storage`. A prop `isProAdmin` é repassada para o `BottomNav`, `ProfileDrawer` e `ProfessionalDashboardView`. Adicionado bloqueio de rota na aba `personalizar` para não-administradores.
+  - `src/components/BottomNav.tsx`: No modo `isProfessionalMode`, a 4ª aba ("Gerenciar" / "Espaço") só é exibida se `isProAdmin` for verdadeiro. Para membros comuns, a navegação fica enxuta e focada nas abas operacionais ("Painel", "Serviços", "Agenda").
+  - `src/components/ProfileDrawer.tsx`: Opções de "Gerenciar Estabelecimento" e "Agenda Geral" condicionadas a `isProAdmin`.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Botão "Gerenciar" (Personalizar Salão) condicionado a `effectiveIsAdmin`. Adicionado seletor ágil de profissional ativo no cabeçalho do painel permitindo alternar e testar imediatamente a experiência de Admin vs Membro.
+  - `src/components/professional/TeamManager.tsx`: Adicionados botões de ação para o super-administrador promover membros a Administrador ou rebaixá-los para Membro a qualquer momento, com persistência local e feedback tátil.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros de sintaxe e tipagem.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Ocultação Estrita da Gestão do Salão para a Personalidade Cliente
+- **Tipo:** `[Fix / Security / UI]`
+- **Motivo / Solicitação:** Atendimento à solicitação do usuário: o botão "Acesso do Salão / Gestão" não deve aparecer para o cliente, uma vez que após o login o sistema já identifica se o usuário é cliente ou membro do salão.
+- **Arquivos Impactados:**
+  - `src/components/ProfileDrawer.tsx`: Removido o botão de login de gestor ("Acesso do Salão / Gestão") e a seção de gestão do salão da visão do cliente (`currentPersona === 'cliente'`). O bloco de Gestão do Salão agora é restrito exclusivamente para administradores autenticados (`currentPersona === 'admin' && isSalonLoggedIn`). Limpeza de estados e modais obsoletos de PIN (`isSalonLoginModalOpen`, `salonPinInput`, `loginError`, `handleSalonLoginSubmit`) e remoção de imports não utilizados (`AlertCircle`, `KeyRound`).
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros de tipagem.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Tríade de Personalidades (Cliente | Profissional | Admin) e Hub Unificado "Personalizar Salão"
+- **Tipo:** `[Feat / Architecture / UI]`
+- **Motivo / Solicitação:** Atendimento à solicitação do usuário: unificação dos botões de edição ("Espaço", "Serviços", "Equipe") em uma única central de personalização ("Personalizar Salão" - Opção 2), e substituição do antigo seletor binário "Ger. / Púb." no cabeçalho por um seletor nativo de 3 personalidades (`Cliente | Profissional | Admin`).
+- **Arquivos Impactados:**
+  - `src/types.ts`: Adicionado tipo `UserPersona = 'cliente' | 'profissional' | 'admin'` e estendida a prop de navegação para suportar `'personalizar'`.
+  - `src/components/professional/SalonCustomizationHub.tsx`: Criado o hub unificado com abas internas para Espaço (dados do salão, horários, fotos), Serviços (catálogo e preços) e Equipe (membros e comissões), permitindo gestão centralizada em uma única tela limpa.
+  - `src/components/SalonProfileView.tsx`: Substituído o seletor `Ger. / Púb.` no cabeçalho superior pelo seletor de 3 personalidades (`Cliente | Profissional | Admin`). Implementado `handleSelectPersona` com persistência em `localStorage` (`vagou_current_persona`), sincronização de estados de login e roteamento dinâmico da nova aba `personalizar`.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Integração da prop `currentPersona`. Adicionado botão "Personalizar Salão" visível exclusivamente para a personalidade `admin`, permitindo acesso direto ao hub unificado.
+  - `src/components/professional/FinancialManagerView.tsx`: Integração da prop `currentPersona` para adaptar o painel financeiro conforme a permissão (Dono vs Colaborador).
+  - `src/components/BottomNav.tsx` & `src/components/ProfileDrawer.tsx`: Adaptados para a matriz de permissões da tríade de personalidades.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros de tipagem.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Focus Mode: Remoção do Card de Perfil e Seletor de Equipe do Painel Operacional
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Remoção do card de perfil/visão de equipe selecionado via Focus Mode no topo do painel operacional (`ProfessionalDashboardView`), simplificando a interface para focar diretamente no cliente em atendimento e nas métricas de status.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o contêiner com as informações de perfil logado, botão "Trocar Perfil" e seletor rápido de membros da equipe. Removidos também o estado e o modal `isSwitchUserModalOpen`, além da limpeza de imports não utilizados (`Building2`, `Shield`, `Users`, `Check`, `X`, `User`, `hapticSuccess`).
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Painel Gerenciamento: Remoção da Opção "Caixa & Comissões" do Painel Operacional
+- **Tipo:** `[UI / Refactor]`
+- **Motivo / Solicitação:** Remoção da opção/sub-aba "Caixa & Comissões" do painel de gerenciamento (`ProfessionalDashboardView`), unificando o painel na visão focada de atendimentos/métricas operacionais e direcionando a gestão financeira para a aba dedicada e o menu de opções.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o seletor de sub-visões ("Atendimentos" vs "Caixa & Comissões") e o estado `dashboardTab`, mantendo o painel direto na gestão de atendimentos e métricas do dia. Os cards de resumo financeiro agora navegam diretamente para a tela completa de fechamento de caixa via `onNavigateTab('financeiro')`. Limpeza de imports não utilizados (`FinancialManagerView`, `LayoutDashboard`, `DollarSign`).
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Focus Mode: Remoção do Botão de Logout no Cabeçalho do Painel Profissional
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Remoção do elemento selecionado via Focus Mode (`button:nth-of-type(2)` no cabeçalho do `ProfessionalDashboardView`), eliminando o botão redundante de logout e limpando imports não utilizados (`LogOut`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o botão de logout e seu import de ícone `LogOut` (`lucide-react`) no cabeçalho do painel operacional, mantendo a interface limpa e concisa.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Focus Mode: Remoção do Botão de Menu de Opções no Cabeçalho Superior
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Remoção do elemento selecionado via Focus Mode (`button#header-menu-options-btn`) no cabeçalho superior do salão (`SalonProfileView`), restaurando o alinhamento plano original da logotipia e removendo imports não utilizados (`Menu`).
+- **Arquivos Impactados:**
+  - `src/components/SalonProfileView.tsx`: Removido o botão `#header-menu-options-btn` e o import do ícone `Menu` (`lucide-react`), reestabelecendo a área da logo limpa e perfeitamente integrada.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção aprovada com sucesso.
+
+### [2026-09-19] — BottomNav: Abas Públicas ("Início", "Serviços", "Equipe", "Espaço") sem "Financeiro"
+- **Tipo:** `[UI / Refactor]`
+- **Motivo / Solicitação:** Ajuste na barra de navegação inferior (`BottomNav`) para o modo público/cliente: exibição das opções "Início", "Serviços", "Equipe" e "Espaço", removendo a opção gerencial "Financeiro" do rodapé público (mantida exclusivamente no modo profissional/gerencial e no menu de opções).
+- **Arquivos Impactados:**
+  - `src/components/BottomNav.tsx`: Configurada renderização condicional de abas baseada em `isProfessionalMode`. No modo público (`!isProfessionalMode`), o rodapé exibe "Início", "Serviços", "Equipe" e "Espaço" com ícones do `lucide-react` (`Home`, `Scissors`, `Users`, `Store`) e navegação fluida com resposta tátil. A opção "Financeiro" (`DollarSign`) permanece ativa apenas no modo profissional (`isProfessionalMode === true`).
+  - `src/components/SalonProfileView.tsx`: Refinada a alternância e sincronização de `activeTab` para `equipe` e `espaco`, garantindo que o observador de rolagem e os cliques naveguem com precisão para cada seção e sub-aba correspondente.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção verificada com sucesso.
+
+### [2026-09-19] — Menu de Opções: Realocação do Botão Claro/Escuro ao Lado Oposto do Avatar
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Mover o controle de alternância de tema (Modo Claro/Escuro) para o lado direito oposto do avatar do usuário dentro do card de identificação do menu de opções (`ProfileDrawer`), permitindo acesso imediato e direto assim que o usuário abre as opções.
+- **Arquivos Impactados:**
+  - `src/components/ProfileDrawer.tsx`: Inserido o botão compacto de alternância de tema (`#drawer-theme-toggle-btn`) no canto direito do card de identificação do usuário, posicionado em oposição ao avatar (lado esquerdo), com ícones temáticos `Sun`/`Moon` (`lucide-react`), rótulo e resposta tátil. Removido o card duplicado/antigo da lista inferior para manter o layout plano e limpo.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): compilação de produção realizada com sucesso.
+
+### [2026-09-19] — Cabeçalho & Menu: Botão de Menu de Opções no Lado Oposto do Avatar e Opção Financeiro no Drawer
+- **Tipo:** `[UI / Feat / Focus-Mode]`
+- **Motivo / Solicitação:** Inserção de botão dedicado para abrir o menu lateral de opções (`ProfileDrawer`), posicionado no cabeçalho superior no lado oposto do avatar do usuário (lado esquerdo, junto à logotipia), além de disponibilizar a opção "Financeiro" diretamente na lista do menu de opções.
+- **Arquivos Impactados:**
+  - `src/components/SalonProfileView.tsx`: Adicionado o botão de menu de opções (`id="header-menu-options-btn"`) com o ícone oficial `Menu` (`lucide-react`) no canto esquerdo do cabeçalho superior (lado oposto ao avatar), com feedback háptico e abertura imediata do menu de opções (`ProfileDrawer`).
+  - `src/components/ProfileDrawer.tsx`: Inserido o item "Financeiro" (`#menu-option-financeiro`) na lista de opções do menu com o ícone `DollarSign` (`lucide-react`), permitindo navegação rápida para o fechamento de caixa e comissões da equipe.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): 0 erros.
+  - `compile_applet` (`npm run build`): build de produção compilado com sucesso.
+
+### [2026-09-19] — Focus Mode: Remoção da Barra de Rodapé Redundante no Módulo Financeiro
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Remoção do elemento de rodapé inferior fixo (`div:nth-of-type(4)`) na visualização financeira (`FinancialManagerView`), selecionado via Focus Mode pelo usuário. A barra inferior duplicava a ação de exportação via WhatsApp (já disponível no cabeçalho superior) e concorria com a barra de navegação principal (`BottomNav`).
+- **Arquivos Impactados:**
+  - `src/components/professional/FinancialManagerView.tsx`: Removido o elemento de rodapé fixo (`border-t sticky bottom-0 z-20`) com "Caixa Fechado" e botão "Exportar Relatório". A área financeira agora desfruta de rolagem fluida e respira sem sobreposição de barras ou rodapés duplos.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): aprovado com 0 erros.
+  - `compile_applet` (`npm run build`): build de produção verificado com sucesso.
+
+### [2026-09-19] — BottomNav: Inserção do Botão "Financeiro" ao Lado de "Agenda"
+- **Tipo:** `[UI / Feat]`
+- **Motivo / Solicitação:** Inclusão de um botão dedicado no menu inferior (`BottomNav`), posicionado ao lado do botão "Agenda", para acesso direto e fluido à área financeira (`FinancialManagerView`) do estabelecimento.
+- **Arquivos Impactados:**
+  - `src/components/BottomNav.tsx`: Adicionado o item `'financeiro'` ao array `establishmentTabs` com o ícone oficial `DollarSign` (`lucide-react`), ID único `nav-salon-financeiro`, tipagem atualizada para `SalonNavContext` e `BottomNavProps`, e otimização de largura e padding para garantir conforto ergonômico em 3 abas ("Início", "Agenda/Agendar" e "Financeiro").
+  - `src/components/SalonProfileView.tsx`: Importada a visualização `FinancialManagerView`, expandido o estado `activeTab` para contemplar `'financeiro'`, e implementado o chaveamento automático e renderização da tela de gestão financeira (fechamento de caixa, faturamento por período, cálculo de comissões por profissional, divisão por métodos de pagamento e compartilhamento para WhatsApp).
+  - `src/components/ProfileDrawer.tsx`: Atualizada a interface de navegação `onNavigateTab` para compatibilidade total com o tipo `'financeiro'`.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): aprovado sem erros de tipagem.
+  - `compile_applet` (`npm run build`): build de produção compilado com sucesso.
+
+### [2026-09-19] — BottomNav: Remoção de "Serviços", "Equipe" e "Espaço" e Realocação no Menu de Perfil (Avatar)
+- **Tipo:** `[UI / Refactor / Focus-Mode]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via seletores visuais (`#nav-salon-servicos`, `#nav-salon-equipe`, `#nav-salon-espaco`): remoção definitiva desses 3 botões da barra de navegação inferior (`BottomNav`) e realocação como opções acessíveis dentro do menu lateral que se expande ao clicar no avatar do usuário (`ProfileDrawer`).
+- **Arquivos Impactados:**
+  - `src/components/BottomNav.tsx`: Removidos os itens `'servicos'`, `'equipe'` e `'espaco'` do array `establishmentTabs`. A barra de navegação inferior agora exibe exclusivamente "Início" e "Agendar/Agenda", garantindo máxima ergonomia e despoluição visual no rodapé.
+  - `src/components/ProfileDrawer.tsx`: Adicionadas as 3 opções ("Serviços", "Equipe" e "Espaço") com ícones temáticos do `lucide-react` (`Scissors`, `Users`, `Store`), fechamento suave do drawer e navegação direta para suas respectivas seções e telas via `onNavigateTab`.
+  - `src/components/SalonProfileView.tsx`: Conectado o callback `handleSelectTab` como `onNavigateTab` no `ProfileDrawer`, com suporte completo para alternância entre seções (tanto no modo público com scroll snap e slides adequados quanto no modo de gestão).
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`): aprovado sem erros de tipagem ou imports órfãos.
+  - `compile_applet` (`npm run build`): build de produção validado com sucesso.
+
+### [2026-09-19] — Sincronização e Atualização com o Repositório Vagou2 (com Preservação das Remoções do Usuário)
+- **Tipo:** `[Sync / Feat / Update]`
+- **Motivo / Solicitação:** Atualização do aplicativo incorporando todas as melhorias e novos módulos do repositório oficial (`https://github.com/andersonhpires1/Vagou2.git`), preservando rigorosamente as remoções de elementos solicitadas anteriormente pelo usuário ("Além do que solicitei").
+- **Novidades e Módulos Integrados do Vagou2:**
+  - `src/components/professional/FinancialManagerView.tsx`: Módulo completo de Gestão Financeira, comissões por profissional, fluxo de caixa e projeções líquidas.
+  - `src/utils/pwaAssets.ts`: Gerenciamento dinâmico de favicon, apple-touch-icon, manifest e título para personalização PWA.
+  - `src/components/professional/ProfessionalAgendaView.tsx`: Sistema de bloqueio de horários (por profissional ou equipe inteira) e fluxo de recebimento por métodos de pagamento (Pix, Cartão de Crédito/Débito, Dinheiro).
+  - `src/components/professional/ProfessionalSpaceManager.tsx`: Identidade visual com upload de logotipo retangular, ícone de PWA (1:1), seletor de cor de destaque e personalização de dados cadastrais.
+  - `src/components/professional/TeamManager.tsx`: Configuração de taxa de comissão individual (% de repasse) por membro da equipe.
+  - `src/types.ts`: Tipagem expandida para métodos de pagamento, status de bloqueio, comissões e personalização PWA.
+  - `src/App.tsx`: Inicialização automática dos ativos PWA salvos (`initializeStoredPwaAssets`).
+  - `supabase/schema.sql` & `USER_MANUAL.md`: Documentação e scripts de banco de dados sincronizados.
+- **Preservação Rígida das Diretivas do Usuário:**
+  - Mantida a **exclusão** dos botões `PRO` e `Bell` no cabeçalho de `SalonProfileView.tsx`.
+  - Mantida a **exclusão** das opções "Minha Agenda" e "Notificações & Lembretes" no menu lateral de `ProfileDrawer.tsx`.
+- **Validação:**
+  - `lint_applet` (`tsc --noEmit`) 100% verde sem erros.
+  - `compile_applet` (`npm run build`) validado com sucesso.
+
+### [2026-09-19] — Menu de Perfil: Exclusão das Opções "Minha Agenda" e "Notificações & Lembretes"
+- **Tipo:** `[UI / Focus-Mode Element Removal]`
+- **Motivo / Solicitação:** Exclusão definitiva dos elementos selecionados diretamente pelo usuário via seletor de foco (`button:nth-of-type(1)` — "Minha Agenda" e `button:nth-of-type(3)` — "Notificações & Lembretes") na lista de opções do menu lateral de perfil do usuário.
+- **Arquivos Impactados:**
+  - `src/components/ProfileDrawer.tsx`: Remoção dos dois botões de opções do menu principal ("Minha Agenda" e "Notificações & Lembretes") e limpeza do import não utilizado (`Bell`).
 - **Resultado:**
-  - O estabelecimento agora dispõe de controle financeiro profissional, gestão de equipe com regras de comissão automatizadas e flexibilidade operacional para trancar horários sem afetar a experiência do cliente.
+  - Menu de perfil mais enxuto e objetivo, exibindo apenas as opções essenciais ("Meus Dados Pessoais", "Alternar Tema", "Chat no App" e gestão do salão), sem poluição ou botões indesejados.
+
+### [2026-09-19] — Cabeçalho Superior: Remoção dos Botões PRO e Notificações (Bell)
+- **Tipo:** `[UI / Cleanup / Header Refine]`
+- **Motivo / Solicitação:** Remoção dos botões de acesso PRO e notificações (Bell) no topo do cabeçalho da visualização do salão conforme seleção direta dos elementos na interface.
+- **Arquivos Impactados:**
+  - `src/components/SalonProfileView.tsx`: Remoção do botão de acesso `PRO` no estado deslogado e do botão de notificações (`Bell`), mantendo a estrutura limpa com o botão de favoritar e o avatar do usuário para acesso ao menu e configurações.
+- **Resultado:**
+  - Cabeçalho superior mais limpo, minimalista e focado na identidade do salão e no usuário.
+
+### [2026-09-18] — Atualização e Sincronização via Repositório GitHub (Vagou2)
+- **Tipo:** `[Sync / Repository Update]`
+- **Motivo / Solicitação:** Sincronização e atualização do aplicativo com o repositório oficial (`https://github.com/andersonhpires1/Vagou2.git`).
+- **Arquivos Impactados:**
+  - Todo o codebase verificado e validado.
+- **Resultado:**
+  - Build compilado com sucesso, linter 100% verde e aplicação totalmente sincronizada e funcional.
 
 ### [2026-09-18] — Tema Escuro Global: Textos e Ícones SVG em Branco Puro & Cor Temática Exclusiva nos Elementos Especiais
 - **Tipo:** `[UI / Theme / Global Contrast Rule]`

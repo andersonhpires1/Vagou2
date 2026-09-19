@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { KeyRound, Check, X, ShieldCheck, AlertCircle } from 'lucide-react';
+import { KeyRound, Check, AlertCircle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { hapticLight, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
@@ -10,6 +10,8 @@ interface ProfessionalLoginModalProps {
   onSuccess?: () => void;
   savedPin?: string;
   salonName?: string;
+  title?: string;
+  description?: string;
 }
 
 export const ProfessionalLoginModal: React.FC<ProfessionalLoginModalProps> = ({
@@ -19,6 +21,8 @@ export const ProfessionalLoginModal: React.FC<ProfessionalLoginModalProps> = ({
   onSuccess,
   savedPin = '1234',
   salonName,
+  title = 'Acesso do Profissional',
+  description = 'Digite seu PIN de 4 dígitos para gerenciar serviços, agenda e espaço.',
 }) => {
   const { isDark } = useTheme();
   const [pin, setPin] = useState('');
@@ -83,7 +87,7 @@ export const ProfessionalLoginModal: React.FC<ProfessionalLoginModalProps> = ({
         </div>
 
         <h3 className="text-base font-bold font-['Poppins']">
-          Acesso do Profissional
+          {title}
         </h3>
         {salonName && (
           <p className="text-[11px] font-semibold text-emerald-500 -mt-0.5 mb-1">
@@ -91,7 +95,7 @@ export const ProfessionalLoginModal: React.FC<ProfessionalLoginModalProps> = ({
           </p>
         )}
         <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-1 mb-4`}>
-          Digite seu PIN de 4 dígitos para gerenciar serviços, agenda e espaço.
+          {description}
         </p>
 
         {/* Display do PIN */}

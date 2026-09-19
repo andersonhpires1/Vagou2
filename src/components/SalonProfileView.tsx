@@ -1,22 +1,24 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { 
   ArrowLeft, Heart, Zap, 
-  Calendar, Bell,
+  Calendar,
   ChevronLeft, ChevronRight, ArrowRight,
   Check, MessageCircle, MessageSquare,
   Scissors, Hand, Smile, Eye, Sparkles, LayoutDashboard,
   Store, Car, MapPin, Clock, Users, Wifi, Coffee, Wind,
-  KeyRound, LogOut, ShieldCheck, EyeOff, User
+  LogOut, ShieldCheck, EyeOff, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ServiceOffer, BookingAppointment, SalonAdminSettings } from '../types';
+import { ServiceOffer, BookingAppointment, SalonAdminSettings, UserPersona, ProfessionalTeamMember } from '../types';
 import { SalonBookingModal, CatalogServiceItem, SalonProfessionalItem } from './SalonBookingModal';
 import { ProfessionalDashboardView } from './professional/ProfessionalDashboardView';
 import { ProfessionalServicesManager } from './professional/ProfessionalServicesManager';
 import { ProfessionalAgendaView } from './professional/ProfessionalAgendaView';
 import { ProfessionalSpaceManager } from './professional/ProfessionalSpaceManager';
 import { TeamManager } from './professional/TeamManager';
+import { FinancialManagerView } from './professional/FinancialManagerView';
 import { ProfessionalLoginModal } from './professional/ProfessionalLoginModal';
+import { SalonCustomizationHub } from './professional/SalonCustomizationHub';
 import { useTheme } from '../context/ThemeContext';
 import { getSalonLogo } from '../utils/salonLogos';
 import { updateDynamicPwaAssets } from '../utils/pwaAssets';
@@ -238,12 +240,6 @@ const INITIAL_PROFESSIONALS: SalonProfessionalItem[] = [
     role: 'Especialista em Mechas e Cor',
     avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
     rating: 5.0,
-  },
-  {
-    name: 'Diego Souza',
-    role: 'Barber Stylist & Barboterapia',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-    rating: 4.8,
   }
 ];
 
@@ -470,21 +466,166 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState<boolean>(false);
   const [currentUserName, setCurrentUserName] = useState<string>(userName);
   const [isLoginPinModalOpen, setIsLoginPinModalOpen] = useState<boolean>(false);
+  const [isManagePinModalOpen, setIsManagePinModalOpen] = useState<boolean>(false);
+
+  // Personalidade Ativa: 'cliente' | 'pro' (mapeando legados 'profissional'/'admin' para 'pro')
+  const [currentPersona, setCurrentPersona] = useState<UserPersona>(() => {
+    try {
+      const saved = localStorage.getItem('vagou_current_persona') as UserPersona;
+      if (saved === 'cliente') return 'cliente';
+      if (saved === 'pro' || saved === 'profissional' || saved === 'admin') {
+        return 'pro';
+      }
+      const logged = localStorage.getItem('vagou_salon_logged_in') === 'true';
+      return logged ? 'pro' : 'cliente';
+    } catch {
+      return 'pro';
+    }
+  });
 
   // Estado de Autenticação do Salão / Modo Gestor
   const [isSalonLoggedIn, setIsSalonLoggedIn] = useState<boolean>(() => {
     try {
+      const saved = localStorage.getItem('vagou_current_persona');
+      if (saved === 'pro' || saved === 'admin' || saved === 'profissional') return true;
+      if (saved === 'cliente') return false;
       return localStorage.getItem('vagou_salon_logged_in') === 'true';
     } catch {
-      return false;
+      return true;
     }
   });
 
   // Modo de visualização quando logado: 'ger' (Gerenciamento) ou 'pub' (Público / Visão do Cliente)
-  const [viewMode, setViewMode] = useState<'ger' | 'pub'>('ger');
+  const [viewMode, setViewMode] = useState<'ger' | 'pub'>(() => {
+    try {
+      const saved = localStorage.getItem('vagou_current_persona');
+      return saved === 'cliente' ? 'pub' : 'ger';
+    } catch {
+      return 'ger';
+    }
+  });
 
-  // Modo ativo efetivo
-  const isGerMode = isSalonLoggedIn && viewMode === 'ger';
+  // Modo ativo operacional/gerenciamento
+  const isGerMode = currentPersona !== 'cliente';
+
+  // Identificação do Profissional Logado / Ativo no modo Pro
+  const [activeProId, setActiveProId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vagou_active_pro_id') || 'prof_admin_1';
+    } catch {
+      return 'prof_admin_1';
+    }
+  });
+
+  // Lista dinâmica de membros da equipe para identificação de perfil (Admin vs Membro)
+  const [teamMembersList, setTeamMembersList] = useState<ProfessionalTeamMember[]>(() => {
+    try {
+      const saved = localStorage.getItem('vagou_salon_team_members') || localStorage.getItem('vagou_team_members');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [
+      {
+        id: 'prof_admin_1',
+        name: 'Carlos Henrique',
+        role: 'admin',
+        phone: '(41) 99882-1140',
+        commissionRate: 100,
+        specialties: ['Cortes Clássicos', 'Barboterapia', 'Visagismo'],
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        isActive: true,
+        joinedAt: new Date().toISOString(),
+      },
+      {
+        id: 'prof_2',
+        name: 'Mateus Ramos',
+        role: 'professional',
+        phone: '(41) 99765-4321',
+        commissionRate: 50,
+        specialties: ['Degradê', 'Fade Navalhado', 'Pigmentação'],
+        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+        isActive: true,
+        joinedAt: new Date().toISOString(),
+      },
+      {
+        id: 'prof_3',
+        name: 'Juliana Costa',
+        role: 'professional',
+        phone: '(41) 99234-5678',
+        commissionRate: 50,
+        specialties: ['Visagismo Feminino', 'Tratamentos'],
+        avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
+        isActive: true,
+        joinedAt: new Date().toISOString(),
+      },
+    ];
+  });
+
+  // Atualização em tempo real de membros de equipe caso alterados no TeamManager
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const saved = localStorage.getItem('vagou_salon_team_members') || localStorage.getItem('vagou_team_members');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setTeamMembersList(parsed);
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const activeProMember = useMemo(() => {
+    return teamMembersList.find(m => m.id === activeProId) || teamMembersList.find(m => m.role === 'admin') || teamMembersList[0];
+  }, [teamMembersList, activeProId]);
+
+  const isActiveProAdmin = activeProMember?.role === 'admin';
+
+  const handleSelectActiveProId = (id: string) => {
+    setActiveProId(id);
+    try {
+      localStorage.setItem('vagou_active_pro_id', id);
+      const member = teamMembersList.find(m => m.id === id);
+      if (member) {
+        localStorage.setItem('vagou_dashboard_user_role', member.role);
+        localStorage.setItem('vagou_dashboard_logged_pro_name', member.name);
+      }
+    } catch {}
+  };
+
+  // Alternador das 2 Personalidades: Cliente | Pro
+  const handleSelectPersona = (persona: UserPersona) => {
+    hapticLight();
+    const effectivePersona = persona === 'cliente' ? 'cliente' : 'pro';
+    setCurrentPersona(effectivePersona);
+    try {
+      localStorage.setItem('vagou_current_persona', effectivePersona);
+    } catch {
+      // ignore
+    }
+
+    if (effectivePersona === 'cliente') {
+      setViewMode('pub');
+      setIsSalonLoggedIn(false);
+      setActiveTab('home');
+      try {
+        localStorage.setItem('vagou_salon_logged_in', 'false');
+      } catch {}
+    } else {
+      // 'pro'
+      setViewMode('ger');
+      setIsSalonLoggedIn(true);
+      setActiveTab('home');
+      try {
+        localStorage.setItem('vagou_salon_logged_in', 'true');
+      } catch {}
+    }
+  };
 
   // Configurações do Salão editáveis pelo gestor
   const [adminSettings, setAdminSettings] = useState<SalonAdminSettings>(() => {
@@ -621,8 +762,10 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     if (pin.trim() === validPin.trim()) {
       setIsSalonLoggedIn(true);
       setViewMode('ger');
+      setCurrentPersona('admin');
       try {
         localStorage.setItem('vagou_salon_logged_in', 'true');
+        localStorage.setItem('vagou_current_persona', 'admin');
       } catch {
         // ignore
       }
@@ -634,11 +777,31 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   const handleSalonLogout = () => {
     setIsSalonLoggedIn(false);
     setViewMode('pub');
+    setCurrentPersona('cliente');
     try {
       localStorage.removeItem('vagou_salon_logged_in');
+      localStorage.setItem('vagou_current_persona', 'cliente');
     } catch {
       // ignore
     }
+  };
+
+  // Solicitação de acesso a Gerenciar Estabelecimento com verificação obrigatória de senha
+  const handleRequestManage = useCallback(() => {
+    if (!isActiveProAdmin) {
+      return;
+    }
+    setIsManagePinModalOpen(true);
+  }, [isActiveProAdmin]);
+
+  const handleConfirmManagePin = (pin: string): boolean => {
+    const validPin = (adminSettings.pinCode || '1234').trim();
+    if (pin.trim() === validPin) {
+      setActiveTab('personalizar');
+      setIsManagePinModalOpen(false);
+      return true;
+    }
+    return false;
   };
 
   useEffect(() => {
@@ -647,7 +810,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     }
   }, [userName]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar'>('home');
   const [bookingService, setBookingService] = useState<CatalogServiceItem | null>(null);
   const [skipDateStep, setSkipDateStep] = useState<boolean>(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
@@ -809,20 +972,105 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   }, [primaryOffer, salonName, salonOffers, offers]);
 
   // Navegação direta: no modo público rola para a seção; no modo gerenciamento alterna a aba diretamente
-  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco') => {
+  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => {
+    if (tab === 'personalizar') {
+      if (isGerMode && !isActiveProAdmin) {
+        setActiveTab('home');
+        return;
+      }
+      handleRequestManage();
+      return;
+    }
+
+    if (tab === 'financeiro') {
+      if (currentPersona === 'cliente') {
+        setCurrentPersona('admin');
+        setIsSalonLoggedIn(true);
+        setViewMode('ger');
+      }
+      setActiveTab('financeiro');
+      return;
+    }
+
+    if (tab === 'equipe') {
+      if (isGerMode) {
+        if (!isActiveProAdmin) {
+          setActiveTab('home');
+          return;
+        }
+        handleRequestManage();
+        return;
+      }
+      setActiveTab('equipe');
+      setEspacoSlideIndex(0);
+      isProgrammaticScroll.current = true;
+      if (espacoSectionRef.current && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: espacoSectionRef.current.offsetTop,
+          behavior: 'smooth',
+        });
+      }
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 600);
+      return;
+    }
+
+    if (tab === 'espaco') {
+      if (isGerMode) {
+        if (!isActiveProAdmin) {
+          setActiveTab('home');
+          return;
+        }
+        handleRequestManage();
+        return;
+      }
+      setActiveTab('espaco');
+      setEspacoSlideIndex(1);
+      isProgrammaticScroll.current = true;
+      if (espacoSectionRef.current && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: espacoSectionRef.current.offsetTop,
+          behavior: 'smooth',
+        });
+      }
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 600);
+      return;
+    }
+
+    if (tab === 'servicos') {
+      if (isGerMode) {
+        handleRequestManage();
+        return;
+      }
+      setActiveTab('servicos');
+      isProgrammaticScroll.current = true;
+      if (servicosSectionRef.current && scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: servicosSectionRef.current.offsetTop,
+          behavior: 'smooth',
+        });
+      }
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 600);
+      return;
+    }
+
     setActiveTab(tab);
     if (isGerMode) {
       // No modo gerenciamento, a navegação é exclusivamente por botões (troca direta de estado)
       return;
     }
     isProgrammaticScroll.current = true;
-    const targetMap: Record<'home' | 'servicos' | 'vagas' | 'espaco', HTMLElement | null> = {
+    const targetMap: Record<'home' | 'servicos' | 'vagas', HTMLElement | null> = {
       home: homeSectionRef.current,
       servicos: servicosSectionRef.current,
       vagas: vagasSectionRef.current,
-      espaco: espacoSectionRef.current,
     };
-    const target = targetMap[tab];
+    const target = targetMap[tab as 'home' | 'servicos' | 'vagas'];
     if (target && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
         top: target.offsetTop,
@@ -832,7 +1080,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     setTimeout(() => {
       isProgrammaticScroll.current = false;
     }, 600);
-  }, [isGerMode]);
+  }, [isGerMode, currentPersona]);
 
   // Observer para sincronizar a aba ativa do rodapé ao deslizar o dedo pelas seções da landing page (somente no modo público)
   useEffect(() => {
@@ -852,8 +1100,10 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
         if (isProgrammaticScroll.current) return;
         entries.forEach((entry) => {
           if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            const tabId = entry.target.getAttribute('data-tab-id') as 'home' | 'servicos' | 'vagas' | 'espaco';
-            if (tabId) {
+            const tabId = entry.target.getAttribute('data-tab-id');
+            if (tabId === 'espaco') {
+              setActiveTab(espacoSlideIndex === 0 ? 'equipe' : 'espaco');
+            } else if (tabId === 'home' || tabId === 'servicos' || tabId === 'vagas') {
               setActiveTab(tabId);
             }
           }
@@ -870,7 +1120,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     });
 
     return () => observer.disconnect();
-  }, [isGerMode]);
+  }, [isGerMode, espacoSlideIndex]);
 
   // Catálogo completo de serviços conectado ao estado dinâmico gerenciável
   const filteredCatalogServices = useMemo(() => {
@@ -1053,68 +1303,45 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
           )}
         </div>
 
-        {/* Lado Direito: Modo Profissional (Seletor Ger. / Púb. quando logado, ou Botão PRO) + Favoritar + Notificação + Foto do Usuário */}
+        {/* Lado Direito: Modo Profissional (Seletor Ger. / Púb. quando logado) + Favoritar + Foto do Usuário */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Seletor Ger. / Púb. quando Logado ou Botão de Acesso PRO */}
-          {isSalonLoggedIn ? (
-            <div className={`flex items-center p-0.5 rounded border ${
+          {/* Seletor Cliente | Pro */}
+          <div 
+            id="header-persona-selector"
+            className={`flex items-center p-0.5 rounded border ${
               isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-300 shadow-xs'
-            }`}>
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  setViewMode('ger');
-                }}
-                className={`px-2 py-1 rounded text-[11px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                  viewMode === 'ger'
-                    ? 'bg-accent text-white shadow-xs'
-                    : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-950'
-                }`}
-                title="Modo Gerenciamento: Dashboard, Serviços, Agenda e Espaço"
-                aria-label="Ativar Modo Gerenciamento"
-              >
-                Ger.
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  setViewMode('pub');
-                }}
-                className={`px-2 py-1 rounded text-[11px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
-                  viewMode === 'pub'
-                    ? 'bg-accent text-white shadow-xs'
-                    : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-950'
-                }`}
-                title="Modo Público: Ver o aplicativo como os clientes veem"
-                aria-label="Ativar Modo Público"
-              >
-                Púb.
-              </button>
-            </div>
-          ) : (
+            }`}
+          >
             <button
               type="button"
-              onClick={() => {
-                hapticLight();
-                setIsLoginPinModalOpen(true);
-              }}
-              className={`h-9 sm:h-10 px-2.5 rounded flex items-center gap-1.5 font-bold text-xs transition cursor-pointer active:scale-95 whitespace-nowrap ${
-                isDark 
-                  ? 'bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-emerald-400 border border-slate-800' 
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-emerald-600 border border-slate-200 shadow-xs'
+              id="persona-btn-cliente"
+              onClick={() => handleSelectPersona('cliente')}
+              className={`px-2.5 py-1 rounded text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
+                currentPersona === 'cliente'
+                  ? 'bg-emerald-500 text-white shadow-xs'
+                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-950'
               }`}
-              title="Acesso Exclusivo do Profissional / Salão"
-              aria-label="Login Profissional"
+              title="Visualizar como Cliente"
             >
-              <KeyRound className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-500">PRO</span>
+              Cliente
             </button>
-          )}
+            <button
+              type="button"
+              id="persona-btn-pro"
+              onClick={() => handleSelectPersona('pro')}
+              className={`px-2.5 py-1 rounded text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-center ${
+                currentPersona !== 'cliente'
+                  ? 'bg-emerald-500 text-white shadow-xs'
+                  : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-950'
+              }`}
+              title="Visualizar como Profissional (Estabelecimento)"
+            >
+              Pro
+            </button>
+          </div>
 
           {/* Favoritar Rápido (Somente visível no modo cliente/público) */}
-          {!isGerMode && (
+          {currentPersona === 'cliente' && (
             <button
               onClick={() => onToggleFavorite?.(salonInfo.name)}
               className={`w-9 sm:w-10 h-9 sm:h-10 rounded flex items-center justify-center transition active:scale-95 cursor-pointer ${
@@ -1128,24 +1355,6 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
               <Heart className={`w-4.5 h-4.5 ${isFavorite ? 'fill-rose-500 text-rose-500' : isDark ? 'text-slate-400' : 'text-slate-500'}`} />
             </button>
           )}
-
-          {/* Notificações / Menu do Usuário */}
-          <button
-            onClick={() => {
-              hapticLight();
-              setIsProfileDrawerOpen(true);
-            }}
-            className={`relative w-9 sm:w-10 h-9 sm:h-10 rounded flex items-center justify-center transition active:scale-95 cursor-pointer ${
-              isDark
-                ? 'bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white'
-                : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-950 shadow-xs'
-            }`}
-            title="Notificações e Perfil"
-            aria-label="Notificações e Perfil"
-          >
-            <Bell className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
-            <span className={`absolute top-2 right-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ${isDark ? 'ring-slate-950' : 'ring-white'}`} />
-          </button>
 
           {/* Foto do Usuário / Abrir Perfil */}
           <button
@@ -1180,20 +1389,16 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                 appointments={appointmentsList}
                 professionals={professionalsList}
                 onNavigateTab={handleSelectTab}
-                onOpenNewService={() => handleSelectTab('servicos')}
+                onOpenNewService={() => handleSelectTab('personalizar')}
                 onOpenNewAppointment={() => handleSelectTab('vagas')}
                 onLogout={handleSalonLogout}
                 salonName={salonInfo.name}
                 currentUserName={currentUserName}
-              />
-            </div>
-          )}
-
-          {activeTab === 'servicos' && (
-            <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-between animate-in fade-in duration-150">
-              <ProfessionalServicesManager
-                services={catalogServicesList}
-                onUpdateServices={handleUpdateServices}
+                currentPersona={currentPersona}
+                isProAdmin={isActiveProAdmin}
+                activeProId={activeProId}
+                onSelectActiveProId={handleSelectActiveProId}
+                onRequestManage={handleRequestManage}
               />
             </div>
           )}
@@ -1209,20 +1414,31 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
             </div>
           )}
 
-          {activeTab === 'espaco' && (
+          {(activeTab === 'personalizar' || activeTab === 'servicos' || activeTab === 'espaco' || activeTab === 'equipe') && (
             <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-start animate-in fade-in duration-150">
-              <ProfessionalSpaceManager
+              <SalonCustomizationHub
+                initialSubTab={activeTab === 'servicos' ? 'servicos' : activeTab === 'equipe' ? 'equipe' : 'hub'}
                 adminSettings={adminSettings}
                 onUpdateSettings={handleUpdateSettings}
+                services={catalogServicesList}
+                onUpdateServices={handleUpdateServices}
                 professionals={professionalsList}
                 onUpdateProfessionals={handleUpdateProfessionals}
+                appointments={appointmentsList}
+                onUpdateAppointments={handleUpdateAppointments}
+                onBack={() => handleSelectTab('home')}
               />
             </div>
           )}
 
-          {activeTab === 'equipe' && (
+          {activeTab === 'financeiro' && (
             <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-start animate-in fade-in duration-150">
-              <TeamManager />
+              <FinancialManagerView
+                appointments={appointmentsList}
+                onUpdateAppointments={handleUpdateAppointments}
+                salonName={salonInfo.name}
+                currentPersona={currentPersona}
+              />
             </div>
           )}
         </main>
@@ -1929,6 +2145,8 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
         SpaceIcon={SpaceIcon}
         ServicesIcon={ServicesIcon}
         isProfessionalMode={isGerMode}
+        currentPersona={currentPersona}
+        isProAdmin={isActiveProAdmin}
       />
 
       {/* 2. MODAL DE AGENDAMENTO CONFIRMADO (DENTRO DA SEÇÃO DO ESTABELECIMENTO) */}
@@ -2039,18 +2257,22 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
         userAvatarUrl={userAvatarUrl}
         onUpdateUserName={(newName) => setCurrentUserName(newName)}
         onNavigateToSchedule={() => handleSelectTab('vagas')}
+        onNavigateTab={handleSelectTab}
         salonName={salonInfo.name}
         salonPhone="5511987654321"
         isSalonLoggedIn={isSalonLoggedIn}
+        currentPersona={currentPersona}
+        isProAdmin={isActiveProAdmin}
+        onRequestManage={handleRequestManage}
         onOpenAdminPanel={() => {
-          setViewMode('ger');
+          handleSelectPersona('pro');
           handleSelectTab('home');
         }}
         onLoginSalon={handleSalonLogin}
         onLogoutSalon={handleSalonLogout}
       />
 
-      {/* Modal de Autenticação / Login do Profissional */}
+      {/* Modal de Autenticação / Login Inicial do Profissional */}
       <ProfessionalLoginModal
         isOpen={isLoginPinModalOpen}
         onClose={() => setIsLoginPinModalOpen(false)}
@@ -2063,6 +2285,21 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
           } catch {
             // ignore
           }
+        }}
+        savedPin={adminSettings.pinCode || '1234'}
+        salonName={salonInfo.name}
+      />
+
+      {/* Modal de Confirmação de Senha para Acesso a Gerenciar Estabelecimento */}
+      <ProfessionalLoginModal
+        isOpen={isManagePinModalOpen}
+        onClose={() => setIsManagePinModalOpen(false)}
+        title="Confirmar Senha de Acesso"
+        description="Digite novamente a mesma senha de acesso usada no login para gerenciar o estabelecimento."
+        onLogin={handleConfirmManagePin}
+        onSuccess={() => {
+          setActiveTab('personalizar');
+          setIsManagePinModalOpen(false);
         }}
         savedPin={adminSettings.pinCode || '1234'}
         salonName={salonInfo.name}

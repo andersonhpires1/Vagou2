@@ -560,15 +560,15 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
               hapticLight();
               setIsBlockModalOpen(true);
             }}
-            title="Bloquear Horário / Intervalo"
-            className={`px-2 py-1.5 rounded-[4px] border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
+            title="Trava de Emergência / Bloquear Horário"
+            className={`px-2.5 py-1.5 rounded-[4px] border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
               isDark
                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
                 : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
             }`}
           >
             <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Bloquear</span>
+            <span className="hidden sm:inline">Trava / Bloqueio</span>
           </button>
 
           <button
@@ -1457,26 +1457,36 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
               {/* Motivos Rápidos */}
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Motivo do Bloqueio
+                  Motivo da Trava / Bloqueio
                 </label>
                 <div className="flex flex-wrap gap-1 mb-2">
-                  {['Almoço', 'Intervalo', 'Folga', 'Manutenção', 'Compromisso'].map((chip) => (
+                  {[
+                    { label: '🚨 Emergência', value: 'Emergência Médica / Pessoal' },
+                    { label: '🔒 Trava do Turno', value: 'Trava do Turno' },
+                    { label: 'Almoço', value: 'Almoço' },
+                    { label: 'Intervalo', value: 'Intervalo' },
+                    { label: 'Folga', value: 'Folga' },
+                    { label: 'Manutenção', value: 'Manutenção' },
+                  ].map((chip) => (
                     <button
-                      key={chip}
+                      key={chip.label}
                       type="button"
                       onClick={() => {
                         hapticLight();
-                        setBlockReason(chip);
+                        setBlockReason(chip.value);
+                        if (chip.label.includes('Emergência') || chip.label.includes('Turno')) {
+                          setBlockDuration('Turno todo');
+                        }
                       }}
                       className={`px-2 py-1 rounded-[4px] text-[10px] font-bold border transition cursor-pointer ${
-                        blockReason === chip
+                        blockReason === chip.value
                           ? 'bg-amber-500 border-amber-500 text-slate-950 font-black'
                           : isDark
                           ? 'bg-slate-900 border-slate-800 text-slate-300 hover:border-amber-500/50'
                           : 'bg-slate-100 border-slate-200 text-slate-700 hover:border-amber-500/50'
                       }`}
                     >
-                      {chip}
+                      {chip.label}
                     </button>
                   ))}
                 </div>
@@ -1484,7 +1494,7 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
                   type="text"
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
-                  placeholder="Ex: Almoço da Equipe"
+                  placeholder="Ex: Emergência Médica / Almoço"
                   required
                   className={`w-full px-2.5 py-1.5 rounded-[4px] border text-xs outline-hidden transition ${
                     isDark 

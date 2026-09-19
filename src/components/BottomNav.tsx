@@ -1,27 +1,32 @@
 import React from 'react';
-import { Home, Calendar, Sparkles, Store, LayoutDashboard, Users } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, DollarSign, Scissors, Users, Store } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { hapticLight } from '../utils/haptics';
+import { UserPersona } from '../types';
 
 export interface SalonNavContext {
-  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe';
-  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe') => void;
+  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
+  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
   vagasTabLabel?: string;
   isProfessionalMode?: boolean;
+  currentPersona?: UserPersona;
+  isProAdmin?: boolean;
 }
 
 interface BottomNavProps {
   salonContext?: SalonNavContext | null;
-  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe';
-  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe') => void;
+  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
+  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
   vagasTabLabel?: string;
   isProfessionalMode?: boolean;
+  currentPersona?: UserPersona;
+  isProAdmin?: boolean;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -33,34 +38,56 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   spaceTabLabel: propSpaceTabLabel,
   vagasTabLabel: propVagasTabLabel,
   isProfessionalMode: propIsProfessionalMode,
+  currentPersona: propPersona,
+  isProAdmin: propIsProAdmin,
 }) => {
   const { isDark } = useTheme();
 
   const activeTab = propActiveTab || salonContext?.activeTab || 'home';
   const onSelectTab = propOnSelectTab || salonContext?.onSelectTab;
-  const isProfessionalMode = propIsProfessionalMode ?? salonContext?.isProfessionalMode ?? false;
-  const ServicesIcon = propServicesIcon || salonContext?.ServicesIcon || Sparkles;
-  const SpaceIcon = propSpaceIcon || salonContext?.SpaceIcon || Store;
-  const spaceTabLabel = propSpaceTabLabel || salonContext?.spaceTabLabel || (isProfessionalMode ? 'Config' : 'Espaço');
+  const currentPersona = propPersona || salonContext?.currentPersona || (propIsProfessionalMode ? 'pro' : 'cliente');
+  const isProfessionalMode = currentPersona !== 'cliente';
+  const isProAdmin = propIsProAdmin !== undefined 
+    ? propIsProAdmin 
+    : salonContext?.isProAdmin !== undefined 
+    ? salonContext.isProAdmin 
+    : currentPersona === 'admin';
   const vagasTabLabel = propVagasTabLabel || salonContext?.vagasTabLabel || (isProfessionalMode ? 'Agenda' : 'Agendar');
+  const spaceTabLabel = propSpaceTabLabel || salonContext?.spaceTabLabel || 'Espaço';
+  const ServicesIconComponent = propServicesIcon || salonContext?.ServicesIcon || Scissors;
+  const SpaceIconComponent = propSpaceIcon || salonContext?.SpaceIcon || Store;
 
   if (!onSelectTab) {
     return null;
   }
 
-  const establishmentTabs: Array<{
-    id: 'home' | 'vagas' | 'servicos' | 'espaco' | 'equipe';
+  let establishmentTabs: Array<{
+    id: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
-  }> = [
-    { id: 'home', label: 'Início', icon: isProfessionalMode ? LayoutDashboard : Home },
-    { id: 'vagas', label: vagasTabLabel, icon: Calendar },
-    { id: 'servicos', label: 'Serviços', icon: ServicesIcon },
-    { id: 'espaco', label: spaceTabLabel, icon: SpaceIcon },
-  ];
+  }> = [];
 
   if (isProfessionalMode) {
-    establishmentTabs.splice(3, 0, { id: 'equipe', label: 'Equipe', icon: Users });
+    if (isProAdmin) {
+      establishmentTabs = [
+        { id: 'home', label: 'Painel', icon: LayoutDashboard },
+        { id: 'vagas', label: vagasTabLabel, icon: Calendar },
+        { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+      ];
+    } else {
+      establishmentTabs = [
+        { id: 'home', label: 'Painel', icon: LayoutDashboard },
+        { id: 'vagas', label: vagasTabLabel, icon: Calendar },
+        { id: 'financeiro', label: 'Comissões', icon: DollarSign },
+      ];
+    }
+  } else {
+    establishmentTabs = [
+      { id: 'home', label: 'Início', icon: Home },
+      { id: 'servicos', label: 'Serviços', icon: ServicesIconComponent },
+      { id: 'equipe', label: 'Equipe', icon: Users },
+      { id: 'espaco', label: spaceTabLabel, icon: SpaceIconComponent },
+    ];
   }
 
   return (
@@ -68,7 +95,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       isDark
         ? 'bg-[#151A1E]/95 border-slate-800/90 shadow-[0_-4px_16px_rgba(0,0,0,0.5)]'
         : 'bg-nav-light-theme shadow-[0_-4px_20px_rgba(0,0,0,0.15)] text-white'
-    } backdrop-blur-md border-t px-2 sm:px-3 py-1 my-0 mx-0 flex items-center justify-around z-30 transition-colors`}>
+    } backdrop-blur-md border-t px-3 sm:px-6 py-1 my-0 mx-0 flex items-center justify-around z-30 transition-colors`}>
       {establishmentTabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -81,7 +108,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               hapticLight();
               onSelectTab(tab.id);
             }}
-            className="flex flex-col items-center justify-center gap-1 py-1 px-2 sm:px-3 transition active:scale-95 cursor-pointer group"
+            className="flex flex-col items-center justify-center gap-1 py-1 px-1.5 sm:px-3 transition active:scale-95 cursor-pointer group flex-1 max-w-[100px]"
           >
             <div className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center transition-all ${
               isActive
@@ -94,7 +121,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             }`}>
               <Icon className="w-5 h-5 stroke-[2.2]" />
             </div>
-            <span className={`text-[10px] tracking-wide font-['Poppins'] font-bold truncate max-w-[64px] transition-colors ${
+            <span className={`text-[10px] tracking-wide font-['Poppins'] font-bold truncate max-w-[65px] transition-colors ${
               isActive
                 ? isDark ? 'text-white' : 'text-white font-extrabold'
                 : isDark ? 'text-slate-400' : 'text-white/80'
