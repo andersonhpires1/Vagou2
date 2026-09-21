@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Building2, Palette, Scissors, Users, DollarSign, 
   ArrowLeft, ChevronRight, ShieldCheck, Sparkles,
-  MapPin, Clock, Store
+  MapPin, Clock, Store, Wrench
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { 
@@ -15,8 +15,9 @@ import { VisualIdentityCardView } from './VisualIdentityCardView';
 import { ProfessionalServicesManager } from './ProfessionalServicesManager';
 import { TeamManager } from './TeamManager';
 import { FinancialManagerView } from './FinancialManagerView';
+import { UtilitiesAndToolsView } from './UtilitiesAndToolsView';
 
-export type ManagementCardId = 'dados' | 'visual' | 'servicos' | 'equipe' | 'financeiro';
+export type ManagementCardId = 'dados' | 'visual' | 'servicos' | 'equipe' | 'financeiro' | 'utilidades';
 
 export interface SalonCustomizationHubProps {
   initialSubTab?: ManagementCardId | 'hub' | 'espaco';
@@ -52,6 +53,7 @@ export const SalonCustomizationHub: React.FC<SalonCustomizationHubProps> = ({
     initialSubTab === 'dados' ? 'dados' :
     initialSubTab === 'visual' ? 'visual' :
     initialSubTab === 'financeiro' ? 'financeiro' :
+    initialSubTab === 'utilidades' ? 'utilidades' :
     null;
 
   const [selectedCard, setSelectedCard] = useState<ManagementCardId | null>(initialCard);
@@ -95,6 +97,14 @@ export const SalonCustomizationHub: React.FC<SalonCustomizationHubProps> = ({
       description: 'Faturamento em tempo real, formas de pagamento, repasses e relatórios',
       icon: DollarSign,
       badge: 'Caixa & Métricas',
+      highlightColor: 'emerald',
+    },
+    {
+      id: 'utilidades' as ManagementCardId,
+      title: 'Utilidades & Ferramentas',
+      description: 'Água e luz, medição de relógios, auditoria de fugas, previsão de insumos e bancada',
+      icon: Wrench,
+      badge: 'Eficiência & Estoque',
       highlightColor: 'emerald',
     },
   ];
@@ -254,6 +264,22 @@ export const SalonCustomizationHub: React.FC<SalonCustomizationHubProps> = ({
             currentPersona="admin"
           />
         </div>
+      </div>
+    );
+  }
+
+  // SUB-VIEW: 6. Utilidades & Ferramentas
+  if (selectedCard === 'utilidades') {
+    return (
+      <div className="w-full h-full flex flex-col overflow-hidden">
+        <UtilitiesAndToolsView
+          appointments={appointments}
+          services={services}
+          onBack={() => {
+            hapticLight();
+            setSelectedCard(null);
+          }}
+        />
       </div>
     );
   }

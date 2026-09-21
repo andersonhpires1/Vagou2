@@ -1,14 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Calendar, Clock, CheckCircle2, XCircle, 
   Plus, Phone, User, Check, X,
-  AlertCircle, MessageSquare, ExternalLink,
-  DollarSign, Scissors, Mail,
+  AlertCircle, ExternalLink,
+  DollarSign, Mail,
   ChevronLeft, ChevronRight, ChevronDown, RefreshCw, Send, ShieldCheck,
-  Lock, Unlock, QrCode, CreditCard, Wallet, Banknote
+  Lock, Unlock, ArrowRight,
+  LayoutGrid, List, Sparkles, Zap
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { BookingAppointment, CatalogServiceItem, SalonProfessionalItem, PaymentMethod } from '../../types';
+import { BookingAppointment, CatalogServiceItem, SalonProfessionalItem } from '../../types';
 import { hapticLight, hapticSuccess, hapticMedium } from '../../utils/haptics';
 
 export interface ProfessionalAgendaViewProps {
@@ -18,9 +19,9 @@ export interface ProfessionalAgendaViewProps {
   professionals?: SalonProfessionalItem[];
 }
 
-export type DemandStatusKey = 'confirmados' | 'pendentes' | 'concluidos' | 'cancelados';
+export type DemandStatusKey = 'confirmados' | 'pendentes' | 'trocas' | 'concluidos' | 'cancelados';
 
-export const getStatusCategory = (statusRaw?: string): { 
+export const getStatusCategory = (statusRaw?: string, swapRequest?: any): { 
   key: DemandStatusKey; 
   order: number; 
   label: string; 
@@ -29,81 +30,126 @@ export const getStatusCategory = (statusRaw?: string): {
   badgeText: string; 
   badgeBorder: string;
   badgeFullClass: string;
+  cardBorderDark: string;
+  cardBorderLight: string;
   dotColor: string;
 } => {
   const status = (statusRaw || '').toUpperCase().trim();
+
+  // 0. EM ATENDIMENTO (Iniciado pelo profissional)
+  if (status.includes('ATEND') || status.includes('INICI')) {
+    return {
+      key: 'confirmados',
+      order: 0,
+      label: 'Em Atendimento',
+      shortLabel: 'Em Atendimento',
+      badgeBg: 'bg-emerald-500/20',
+      badgeText: 'text-emerald-300',
+      badgeBorder: 'border-emerald-500/50',
+      badgeFullClass: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 font-bold',
+      cardBorderDark: 'border-emerald-500 hover:border-emerald-400',
+      cardBorderLight: 'border-emerald-500 hover:border-emerald-600',
+      dotColor: 'bg-emerald-400'
+    };
+  }
 
   // BLOQUEADO (Horários trancados / Intervalo / Almoço)
   if (status.includes('BLOQUE')) {
     return {
       key: 'cancelados',
-      order: 4,
+      order: 5,
       label: 'Horários Bloqueados',
       shortLabel: 'Bloqueado',
       badgeBg: 'bg-amber-500/15',
       badgeText: 'text-amber-400',
       badgeBorder: 'border-amber-500/30',
       badgeFullClass: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+      cardBorderDark: 'border-amber-500 hover:border-amber-400',
+      cardBorderLight: 'border-amber-500 hover:border-amber-600',
       dotColor: 'bg-amber-400'
     };
   }
 
-  // 2. ALTERAÇÃO (entram na categoria PENDENTE em amarelo até ambos aceitarem a alteração)
+  // 2. TROCA A CONFIRMAR (Troca entre clientes pendente de confirmação)
+  if ((swapRequest && swapRequest.isClientSwap) || status.includes('TROCA') || status.includes('SWAP')) {
+    return {
+      key: 'trocas',
+      order: 2,
+      label: 'Trocas a Confirmar',
+      shortLabel: 'Troca',
+      badgeBg: 'bg-amber-500/20',
+      badgeText: 'text-amber-300',
+      badgeBorder: 'border-amber-500/40',
+      badgeFullClass: 'bg-amber-500/20 border-amber-500/40 text-amber-300 font-bold',
+      cardBorderDark: 'border-amber-500 hover:border-amber-400',
+      cardBorderLight: 'border-amber-500 hover:border-amber-600',
+      dotColor: 'bg-amber-400'
+    };
+  }
+
+  // 3. ALTERAÇÃO / PENDENTES COMUNS (aguarda confirmação do profissional)
   if (status.includes('ALTER') || status.includes('REMANEJ') || status.includes('REAGEND')) {
     return {
       key: 'pendentes',
-      order: 2,
-      label: 'Alteração (Aguardando Aceite Mútuo)',
+      order: 3,
+      label: 'Alteração (Aguardando Aceite)',
       shortLabel: 'Alteração',
       badgeBg: 'bg-amber-500/15',
       badgeText: 'text-amber-400',
       badgeBorder: 'border-amber-500/30',
       badgeFullClass: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+      cardBorderDark: 'border-amber-500 hover:border-amber-400',
+      cardBorderLight: 'border-amber-500 hover:border-amber-600',
       dotColor: 'bg-amber-400'
     };
   }
 
-  // 2. PENDENTES (aguarda confirmação do profissional)
   if (status.includes('PEND') || status.includes('AGUARD')) {
     return {
       key: 'pendentes',
-      order: 2,
-      label: 'Pendentes (Aguardando Confirmação)',
-      shortLabel: 'Pendente',
+      order: 3,
+      label: 'Agendamentos a Confirmar',
+      shortLabel: 'A Confirmar',
       badgeBg: 'bg-amber-500/15',
       badgeText: 'text-amber-400',
       badgeBorder: 'border-amber-500/30',
       badgeFullClass: 'bg-amber-500/15 border-amber-500/30 text-amber-400',
+      cardBorderDark: 'border-amber-500 hover:border-amber-400',
+      cardBorderLight: 'border-amber-500 hover:border-amber-600',
       dotColor: 'bg-amber-400'
     };
   }
 
-  // 3. CONCLUÍDOS
+  // 4. CONCLUÍDOS
   if (status.includes('CONCLU')) {
     return {
       key: 'concluidos',
-      order: 3,
+      order: 4,
       label: 'Concluídos',
       shortLabel: 'Concluído',
       badgeBg: 'bg-blue-500/15',
       badgeText: 'text-blue-400',
       badgeBorder: 'border-blue-500/30',
       badgeFullClass: 'bg-blue-500/15 border-blue-500/30 text-blue-400',
+      cardBorderDark: 'border-blue-500 hover:border-blue-400',
+      cardBorderLight: 'border-blue-500 hover:border-blue-600',
       dotColor: 'bg-blue-400'
     };
   }
 
-  // 5. CANCELADOS
+  // 6. CANCELADOS
   if (status.includes('CANCEL')) {
     return {
       key: 'cancelados',
-      order: 5,
+      order: 6,
       label: 'Cancelados',
       shortLabel: 'Cancelado',
       badgeBg: 'bg-rose-500/15',
       badgeText: 'text-rose-400',
       badgeBorder: 'border-rose-500/30',
       badgeFullClass: 'bg-rose-500/15 border-rose-500/30 text-rose-400',
+      cardBorderDark: 'border-rose-500 hover:border-rose-400',
+      cardBorderLight: 'border-rose-500 hover:border-rose-600',
       dotColor: 'bg-rose-400'
     };
   }
@@ -118,6 +164,8 @@ export const getStatusCategory = (statusRaw?: string): {
     badgeText: 'text-emerald-400',
     badgeBorder: 'border-emerald-500/30',
     badgeFullClass: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400',
+    cardBorderDark: 'border-emerald-500 hover:border-emerald-400',
+    cardBorderLight: 'border-emerald-500 hover:border-emerald-600',
     dotColor: 'bg-emerald-400'
   };
 };
@@ -135,6 +183,103 @@ const isSameDay = (d1: Date, d2: Date) => {
   );
 };
 
+const isBeforeToday = (date: Date) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = new Date(date);
+  target.setHours(0, 0, 0, 0);
+  return target.getTime() < today.getTime();
+};
+
+export const parseDurationToMinutes = (durationStr?: string): number => {
+  if (!durationStr) return 40;
+  let durationMinutes = 40;
+  if (durationStr.includes('h')) {
+    const hMatch = durationStr.match(/(\d+)\s*h/);
+    const mMatch = durationStr.match(/(\d+)\s*m/);
+    const h = hMatch ? parseInt(hMatch[1], 10) : 0;
+    const m = mMatch ? parseInt(mMatch[1], 10) : 0;
+    durationMinutes = (h * 60) + m;
+  } else {
+    const mMatch = durationStr.match(/(\d+)/);
+    if (mMatch) {
+      durationMinutes = parseInt(mMatch[1], 10);
+    }
+  }
+  return durationMinutes > 0 ? durationMinutes : 40;
+};
+
+export const parseTimeToMinutes = (timeStr?: string): number => {
+  if (!timeStr) return 0;
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return 0;
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  return (h * 60) + m;
+};
+
+export const formatMinutesToTime = (totalMinutes: number): string => {
+  const norm = Math.max(0, Math.min(24 * 60 - 1, totalMinutes));
+  const h = Math.floor(norm / 60);
+  const m = norm % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+};
+
+export const formatDurationDisplay = (minutes: number): string => {
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+};
+
+export const calculateEndTime = (startTime?: string, durationStr?: string): string => {
+  if (!startTime) return '--:--';
+  const startM = parseTimeToMinutes(startTime);
+  const durM = parseDurationToMinutes(durationStr);
+  return formatMinutesToTime(startM + durM);
+};
+
+export const CHECKOUT_BUFFER_MINUTES = 15; // 15 minutos de intervalo para pagamento, conferência e higienização
+export const WORK_DAY_START_MINUTES = 8 * 60; // 08:00
+export const WORK_DAY_END_MINUTES = 20 * 60; // 20:00
+
+export interface DynamicTimelineItem {
+  id: string;
+  type: 'APPOINTMENT' | 'FREE_SLOT';
+  startTime: string;
+  endTime: string;
+  startMinutes: number;
+  endMinutes: number;
+  durationMinutes: number;
+  appointment?: BookingAppointment;
+  chairFreeTime?: string;
+  chairFreeMinutes?: number;
+  bufferMinutes?: number;
+  freeSlotDurationText?: string;
+}
+
+export const formatSelectedDateHeading = (date: Date) => {
+  const isToday = isSameDay(date, new Date());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = isSameDay(date, tomorrow);
+
+  const dayOfWeek = date.toLocaleDateString('pt-BR', { weekday: 'long' });
+  const dayOfWeekCap = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+  const dayAndMonth = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' });
+
+  if (isToday) {
+    return `Hoje • ${dayOfWeekCap}, ${dayAndMonth}`;
+  }
+  if (isTomorrow) {
+    return `Amanhã • ${dayOfWeekCap}, ${dayAndMonth}`;
+  }
+  return `${dayOfWeekCap}, ${dayAndMonth}`;
+};
+
 export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
   appointments = [],
   onUpdateAppointments,
@@ -143,31 +288,29 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
 }) => {
   const { isDark } = useTheme();
 
-  // Estados de Data Selecionada e Calendário do Mês
+  // Estados de Data Selecionada e Calendário do Mês Fixo
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [calendarViewDate, setCalendarViewDate] = useState<Date>(new Date());
-  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-
-  const [timeFilter, setTimeFilter] = useState<'proximo' | 'hoje' | 'semana' | 'mes'>('hoje');
-  const [filter, setFilter] = useState<'todos' | 'confirmados' | 'pendentes' | 'concluidos' | 'cancelados'>('todos');
-  
-  // Categorias colapsáveis na agenda — Confirmados e Pendentes iniciam expandidos (não colapsados), Concluídos e Cancelados iniciam colapsados/ocultos por padrão
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({
-    concluidos: true,
-    cancelados: true,
-  });
-
-  const toggleCategory = (catKey: string) => {
-    hapticLight();
-    setCollapsedCategories((prev) => ({
-      ...prev,
-      [catKey]: !prev[catKey],
-    }));
-  };
+  const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(true);
+  const [slotFilter, setSlotFilter] = useState<'todos' | 'confirmados' | 'livres' | 'concluidos'>('todos');
+  const [viewMode, setViewMode] = useState<'grid' | 'lista'>('grid');
   
   // Modais
   const [selectedAppointment, setSelectedAppointment] = useState<BookingAppointment | null>(null);
-  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isNewModalOpen, setIsNewModalOpen] = useState(() => {
+    try {
+      const shouldOpen = localStorage.getItem('vagou_pending_open_schedule');
+      if (shouldOpen) {
+        localStorage.removeItem('vagou_pending_open_schedule');
+        return true;
+      }
+    } catch {}
+    return false;
+  });
+  const [swapConfirmedModalData, setSwapConfirmedModalData] = useState<{
+    clientA: { name: string; newTime: string };
+    clientB: { name: string; newTime: string };
+  } | null>(null);
 
   // Estados para Bloqueio de Horário
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
@@ -175,9 +318,6 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
   const [blockTime, setBlockTime] = useState('12:00');
   const [blockDuration, setBlockDuration] = useState('1h');
   const [blockProfessional, setBlockProfessional] = useState('Todos');
-
-  // Estado para Seleção de Meio de Pagamento ao Concluir Atendimento
-  const [paymentSelectingAppointment, setPaymentSelectingAppointment] = useState<BookingAppointment | null>(null);
 
   const handleCreateBlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,31 +364,6 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
     try {
       localStorage.setItem('vagou_salon_appointments', JSON.stringify(updated));
     } catch {}
-    setSelectedAppointment(null);
-  };
-
-  const handleConfirmCompletionWithPayment = (paymentMethod: PaymentMethod) => {
-    if (!paymentSelectingAppointment) return;
-    hapticSuccess();
-    const updated = appointments.map((app) => {
-      if (app.protocolCode === paymentSelectingAppointment.protocolCode) {
-        return {
-          ...app,
-          status: 'CONCLUÍDO',
-          isPaid: true,
-          paymentMethod: paymentMethod,
-          paidAt: new Date().toISOString(),
-        };
-      }
-      return app;
-    });
-
-    onUpdateAppointments(updated);
-    try {
-      localStorage.setItem('vagou_salon_appointments', JSON.stringify(updated));
-    } catch {}
-
-    setPaymentSelectingAppointment(null);
     setSelectedAppointment(null);
   };
 
@@ -310,16 +425,64 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [selectedService, setSelectedService] = useState(services[0]?.title || 'Corte Masculino');
-  const [selectedTime, setSelectedTime] = useState('14:00');
+  const [selectedTime, setSelectedTime] = useState(() => {
+    try {
+      const pendingTime = localStorage.getItem('vagou_pending_schedule_time');
+      if (pendingTime) {
+        localStorage.removeItem('vagou_pending_schedule_time');
+        return pendingTime;
+      }
+    } catch {}
+    return '14:00';
+  });
   const [selectedDuration, setSelectedDuration] = useState('40 min');
   const [selectedPrice, setSelectedPrice] = useState(services[0]?.price?.toString() || '50');
+
+  useEffect(() => {
+    try {
+      const pendingTime = localStorage.getItem('vagou_pending_schedule_time');
+      const shouldOpen = localStorage.getItem('vagou_pending_open_schedule');
+      if (pendingTime) {
+        setSelectedTime(pendingTime);
+        localStorage.removeItem('vagou_pending_schedule_time');
+      }
+      if (shouldOpen) {
+        setIsNewModalOpen(true);
+        localStorage.removeItem('vagou_pending_open_schedule');
+      }
+    } catch {}
+  }, []);
 
   const isSelectedDateToday = useMemo(() => {
     const today = new Date();
     return isSameDay(selectedDate, today);
   }, [selectedDate]);
 
-  // Grid do Calendário do Mês
+  // Dias com agendamentos marcados no mês para exibir indicador visual sutil
+  const daysWithAppointments = useMemo(() => {
+    const datesSet = new Set<string>();
+    const now = new Date();
+    const currentYear = calendarViewDate.getFullYear();
+    const todayIso = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+
+    appointments.forEach((app) => {
+      if (app.status === 'CANCELADO') return;
+      if (app.dateIso) {
+        datesSet.add(app.dateIso);
+        return;
+      }
+      const match = app.dateTime?.match(/(\d{2})\/(\d{2})/);
+      if (match) {
+        datesSet.add(`${currentYear}-${match[2]}-${match[1]}`);
+      } else if (app.dayGroup === 'Hoje' || app.dateTime?.includes('Hoje')) {
+        datesSet.add(todayIso);
+      }
+    });
+
+    return datesSet;
+  }, [appointments, calendarViewDate]);
+
+  // Grid do Calendário do Mês (7 colunas)
   const monthGridDays = useMemo(() => {
     const year = calendarViewDate.getFullYear();
     const month = calendarViewDate.getMonth();
@@ -343,100 +506,273 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
     return grid;
   }, [calendarViewDate]);
 
-  // 1. Agendamentos filtrados pela data/intervalo selecionado (Próximo, Hoje, Semana, Mês)
-  const dayAppointments = useMemo(() => {
+  // Agendamentos pertencentes ao dia selecionado no calendário
+  const selectedDayAppointments = useMemo(() => {
+    const targetYear = selectedDate.getFullYear();
+    const targetMonth = selectedDate.getMonth();
+    const targetDay = selectedDate.getDate();
+
+    const targetDayPad = targetDay.toString().padStart(2, '0');
+    const targetMonthPad = (targetMonth + 1).toString().padStart(2, '0');
+    const targetIso = `${targetYear}-${targetMonthPad}-${targetDayPad}`;
+    const targetPtPattern = `${targetDayPad}/${targetMonthPad}`;
+
     return appointments.filter((app) => {
-      let appDate = new Date();
       if (app.dateIso) {
-        appDate = new Date(app.dateIso + 'T00:00:00');
-      } else {
-        const match = app.dateTime?.match(/(\d{2})\/(\d{2})/);
-        if (match) {
-          const day = parseInt(match[1], 10);
-          const month = parseInt(match[2], 10) - 1;
-          const year = new Date().getFullYear();
-          appDate = new Date(year, month, day);
-        } else if (app.dayGroup === 'Hoje' || app.dateTime?.includes('Hoje')) {
-          appDate = new Date();
+        return app.dateIso === targetIso;
+      }
+      if (app.dateTime && app.dateTime.includes(targetPtPattern)) {
+        return true;
+      }
+      if (app.dayGroup && app.dayGroup.includes(targetPtPattern)) {
+        return true;
+      }
+      if (isSameDay(selectedDate, new Date())) {
+        if (app.dayGroup === 'Hoje' || (app.dateTime && app.dateTime.includes('Hoje'))) {
+          return true;
+        }
+        if (!app.dateIso && !app.dateTime?.includes('/')) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }, [appointments, selectedDate]);
+
+  // Próximo agendamento ativo a ser atendido no dia selecionado
+  const nextActiveAppointment = useMemo(() => {
+    const inProgress = selectedDayAppointments.find(a => {
+      const s = (a.status || '').toUpperCase().trim();
+      return s.includes('ATEND') || s.includes('INICI');
+    });
+    if (inProgress) return inProgress;
+
+    const upcoming = selectedDayAppointments
+      .filter(a => {
+        if (a.isBlockedSlot) return false;
+        const s = (a.status || '').toUpperCase().trim();
+        return s !== 'CANCELADO' && !s.includes('CONCLU') && !s.includes('FINALIZ');
+      })
+      .sort((a, b) => {
+        const timeA = (a.time || '').padStart(5, '0');
+        const timeB = (b.time || '').padStart(5, '0');
+        return timeA.localeCompare(timeB);
+      });
+
+    return upcoming[0] || null;
+  }, [selectedDayAppointments]);
+
+  // Linha do tempo dinâmica inteligente: Atendimentos reais sequenciais + cálculo automático de intervalos vagos
+  const timelineData = useMemo(() => {
+    // 1. Atendimentos concluídos (separados da visão ativa para não poluir "agora ou o futuro")
+    const completedApps = selectedDayAppointments.filter(a => {
+      const s = (a.status || '').toUpperCase().trim();
+      return s === 'CONCLUIDO' || s === 'FINALIZADO';
+    });
+
+    const completedItems: DynamicTimelineItem[] = completedApps.map((app, idx) => {
+      let timeStr = app.time ? app.time.trim() : '';
+      if (!timeStr && app.dateTime) {
+        const match = app.dateTime.match(/(\d{1,2}:\d{2})/);
+        if (match) timeStr = match[1];
+      }
+      if (!timeStr) timeStr = '14:00';
+      timeStr = timeStr.padStart(5, '0');
+
+      const startMinutes = parseTimeToMinutes(timeStr);
+      const durationMinutes = parseDurationToMinutes(app.duration);
+      const endMinutes = startMinutes + durationMinutes;
+
+      return {
+        id: `completed-${app.protocolCode || idx}-${timeStr}`,
+        type: 'APPOINTMENT',
+        startTime: timeStr,
+        endTime: formatMinutesToTime(endMinutes),
+        startMinutes,
+        endMinutes,
+        durationMinutes,
+        appointment: app,
+      };
+    }).sort((a, b) => a.startMinutes - b.startMinutes);
+
+    // 2. Atendimentos ativos (exclui CANCELADO e CONCLUIDO/FINALIZADO)
+    const validApps = selectedDayAppointments
+      .filter(a => {
+        const s = (a.status || '').toUpperCase().trim();
+        return s !== 'CANCELADO' && s !== 'CONCLUIDO' && s !== 'FINALIZADO';
+      })
+      .map(app => {
+        let timeStr = app.time ? app.time.trim() : '';
+        if (!timeStr && app.dateTime) {
+          const match = app.dateTime.match(/(\d{1,2}:\d{2})/);
+          if (match) timeStr = match[1];
+        }
+        if (!timeStr) timeStr = '14:00';
+        timeStr = timeStr.padStart(5, '0');
+
+        const startMinutes = parseTimeToMinutes(timeStr);
+        const durationMinutes = parseDurationToMinutes(app.duration);
+        const endMinutes = startMinutes + durationMinutes;
+        const chairFreeMinutes = endMinutes + CHECKOUT_BUFFER_MINUTES;
+
+        return {
+          app,
+          startTime: timeStr,
+          startMinutes,
+          durationMinutes,
+          endMinutes,
+          endTime: formatMinutesToTime(endMinutes),
+          chairFreeMinutes,
+          chairFreeTime: formatMinutesToTime(chairFreeMinutes),
+        };
+      })
+      .sort((a, b) => a.startMinutes - b.startMinutes);
+
+    const items: DynamicTimelineItem[] = [];
+    const freeSlotsSummary: { time: string; durationText: string; durationMinutes: number }[] = [];
+
+    // Cursor temporal ao longo do expediente (inicia às 08:00)
+    let currentCursor = WORK_DAY_START_MINUTES;
+
+    validApps.forEach((item, idx) => {
+      // Verifica se existe lacuna livre antes deste agendamento
+      if (item.startMinutes > currentCursor) {
+        const gapMinutes = item.startMinutes - currentCursor;
+        if (gapMinutes >= 15) {
+          const slotStart = formatMinutesToTime(currentCursor);
+          const slotEnd = formatMinutesToTime(item.startMinutes);
+          const durText = formatDurationDisplay(gapMinutes);
+          
+          items.push({
+            id: `free-before-${idx}-${slotStart}`,
+            type: 'FREE_SLOT',
+            startTime: slotStart,
+            endTime: slotEnd,
+            startMinutes: currentCursor,
+            endMinutes: item.startMinutes,
+            durationMinutes: gapMinutes,
+            freeSlotDurationText: durText,
+          });
+
+          freeSlotsSummary.push({
+            time: slotStart,
+            durationText: durText,
+            durationMinutes: gapMinutes,
+          });
         }
       }
 
-      const now = new Date();
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      // Adiciona o atendimento real (exatamente 1 card, sem duplicidade!)
+      items.push({
+        id: `app-${item.app.protocolCode || idx}-${item.startTime}`,
+        type: 'APPOINTMENT',
+        startTime: item.startTime,
+        endTime: item.endTime,
+        startMinutes: item.startMinutes,
+        endMinutes: item.endMinutes,
+        durationMinutes: item.durationMinutes,
+        appointment: item.app,
+        chairFreeTime: item.chairFreeTime,
+        chairFreeMinutes: item.chairFreeMinutes,
+        bufferMinutes: CHECKOUT_BUFFER_MINUTES,
+      });
 
-      if (timeFilter === 'hoje') {
-        return appDate >= todayStart && appDate <= todayEnd;
-      }
-
-      if (timeFilter === 'proximo') {
-        return appDate >= todayStart;
-      }
-
-      if (timeFilter === 'semana') {
-        const sunday = new Date(todayStart);
-        sunday.setDate(todayStart.getDate() - todayStart.getDay());
-        const saturday = new Date(sunday);
-        saturday.setDate(sunday.getDate() + 6);
-        saturday.setHours(23, 59, 59, 999);
-        return appDate >= sunday && appDate <= saturday;
-      }
-
-      if (timeFilter === 'mes') {
-        return appDate.getMonth() === now.getMonth() && appDate.getFullYear() === now.getFullYear();
-      }
-
-      return true;
-    });
-  }, [appointments, timeFilter]);
-
-  // 2. Contadores para as abas de demanda do dia
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      todos: dayAppointments.length,
-      confirmados: 0,
-      pendentes: 0,
-      concluidos: 0,
-      cancelados: 0,
-    };
-
-    dayAppointments.forEach((app) => {
-      const catKey = getStatusCategory(app.status).key;
-      if (counts[catKey] !== undefined) {
-        counts[catKey]++;
-      }
+      // Atualiza o cursor para quando a cadeira for liberada (após o buffer de 15 min de higienização/caixa)
+      currentCursor = Math.max(currentCursor, item.chairFreeMinutes);
     });
 
-    return counts;
-  }, [dayAppointments]);
+    // Lacuna livre restante até o fim do expediente (20:00)
+    if (currentCursor < WORK_DAY_END_MINUTES) {
+      const remainingMinutes = WORK_DAY_END_MINUTES - currentCursor;
+      if (remainingMinutes >= 15) {
+        const slotStart = formatMinutesToTime(currentCursor);
+        const slotEnd = formatMinutesToTime(WORK_DAY_END_MINUTES);
+        const durText = formatDurationDisplay(remainingMinutes);
 
-  // 3. Agendamentos filtrados pela aba de status selecionada
-  const filteredAppointments = useMemo(() => {
-    if (filter === 'todos') {
-      return dayAppointments;
+        items.push({
+          id: `free-end-${slotStart}`,
+          type: 'FREE_SLOT',
+          startTime: slotStart,
+          endTime: slotEnd,
+          startMinutes: currentCursor,
+          endMinutes: WORK_DAY_END_MINUTES,
+          durationMinutes: remainingMinutes,
+          freeSlotDurationText: durText,
+        });
+
+        freeSlotsSummary.push({
+          time: slotStart,
+          durationText: durText,
+          durationMinutes: remainingMinutes,
+        });
+      }
     }
-    return dayAppointments.filter((app) => getStatusCategory(app.status).key === filter);
-  }, [dayAppointments, filter]);
 
-  // 4. Lista Ordenada pela hierarquia da Demanda do Dia:
-  // 1º Confirmados (próximos aos últimos)
-  // 2º Pendentes & Alterações (próximos aos últimos)
-  // 3º Concluídos (próximos aos últimos)
-  // 4º Cancelados (próximos aos últimos)
-  const sortedAppointments = useMemo(() => {
-    return [...filteredAppointments].sort((a, b) => {
-      const catA = getStatusCategory(a.status);
-      const catB = getStatusCategory(b.status);
-
-      if (filter === 'todos' && catA.order !== catB.order) {
-        return catA.order - catB.order;
-      }
-
-      const timeA = a.time || '00:00';
-      const timeB = b.time || '00:00';
-      return timeA.localeCompare(timeB);
+    const confirmedApps = validApps.filter(app => {
+      if (app.isBlockedSlot || (app.status || '').toUpperCase() === 'BLOQUEADO') return false;
+      const cat = getStatusCategory(app.status, app.swapRequest);
+      return cat.key === 'confirmados';
     });
-  }, [filteredAppointments, filter]);
+
+    return {
+      items,
+      completedItems,
+      freeSlotsSummary,
+      totalAppointments: validApps.length,
+      totalConfirmed: confirmedApps.length,
+      totalFreeSlots: freeSlotsSummary.length,
+      totalCompleted: completedApps.length,
+    };
+  }, [selectedDayAppointments]);
+
+  // Itens da timeline visíveis de acordo com o filtro (Todos / Confirmados / Livres / Concluídos)
+  const visibleTimelineItems = useMemo(() => {
+    if (slotFilter === 'confirmados') {
+      return timelineData.items.filter(item => {
+        if (item.type !== 'APPOINTMENT' || !item.appointment) return false;
+        const app = item.appointment;
+        if (app.isBlockedSlot || (app.status || '').toUpperCase() === 'BLOQUEADO') return false;
+        const cat = getStatusCategory(app.status, app.swapRequest);
+        return cat.key === 'confirmados';
+      });
+    }
+    if (slotFilter === 'livres') {
+      return timelineData.items.filter(item => item.type === 'FREE_SLOT');
+    }
+    if (slotFilter === 'concluidos') {
+      return timelineData.completedItems;
+    }
+    return timelineData.items;
+  }, [timelineData, slotFilter]);
+
+  const isCurrentMonthOrFuture = useMemo(() => {
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const viewMonthStart = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 1);
+    return viewMonthStart.getTime() > currentMonthStart.getTime();
+  }, [calendarViewDate]);
+
+  const handlePrevMonth = () => {
+    if (!isCurrentMonthOrFuture) return;
+    hapticLight();
+    const prev = new Date(calendarViewDate);
+    prev.setMonth(prev.getMonth() - 1);
+    setCalendarViewDate(prev);
+  };
+
+  const handleNextMonth = () => {
+    hapticLight();
+    const next = new Date(calendarViewDate);
+    next.setMonth(next.getMonth() + 1);
+    setCalendarViewDate(next);
+  };
+
+  const handleGoToToday = () => {
+    hapticLight();
+    const today = new Date();
+    setSelectedDate(today);
+    setCalendarViewDate(today);
+  };
 
   const handleStatusChange = (protocolCode: string, newStatus: string) => {
     hapticSuccess();
@@ -451,6 +787,62 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
     if (selectedAppointment && selectedAppointment.protocolCode === protocolCode) {
       setSelectedAppointment({ ...selectedAppointment, status: newStatus });
     }
+  };
+
+  const handleConfirmSwapRequest = (app: BookingAppointment) => {
+    hapticSuccess();
+    const swap = app.swapRequest;
+    if (!swap || !swap.clientA || !swap.clientB) {
+      handleStatusChange(app.protocolCode, 'CONFIRMADO');
+      return;
+    }
+
+    const clientAName = swap.clientA.name;
+    const clientBName = swap.clientB.name;
+    const clientANewTime = swap.clientA.requestedTime || '15:00';
+    const clientBNewTime = swap.clientA.originalTime || '14:00';
+
+    // Update appointment with new swapped time and confirmed status
+    const updated = appointments.map((item) => {
+      if (item.protocolCode === app.protocolCode) {
+        const updatedTime = clientANewTime;
+        const updatedDateTime = item.dateTime ? item.dateTime.replace(/\d{1,2}:\d{2}/, updatedTime) : `Hoje, ${updatedTime}`;
+        return {
+          ...item,
+          time: updatedTime,
+          dateTime: updatedDateTime,
+          status: 'CONFIRMADO',
+          swapRequest: {
+            ...swap,
+            status: 'completed',
+          },
+        };
+      }
+      // Se houver outro agendamento correspondente ao Cliente B no mesmo dia
+      if (item.customerName?.toLowerCase() === clientBName.toLowerCase() || item.clientName?.toLowerCase() === clientBName.toLowerCase()) {
+        const updatedTimeB = clientBNewTime;
+        const updatedDateTimeB = item.dateTime ? item.dateTime.replace(/\d{1,2}:\d{2}/, updatedTimeB) : `Hoje, ${updatedTimeB}`;
+        return {
+          ...item,
+          time: updatedTimeB,
+          dateTime: updatedDateTimeB,
+          status: 'CONFIRMADO',
+        };
+      }
+      return item;
+    });
+
+    onUpdateAppointments(updated);
+    try {
+      localStorage.setItem('vagou_salon_appointments', JSON.stringify(updated));
+    } catch {}
+
+    // Fecha o modal de detalhes do agendamento e abre o modal de confirmação de troca
+    setSelectedAppointment(null);
+    setSwapConfirmedModalData({
+      clientA: { name: clientAName, newTime: clientANewTime },
+      clientB: { name: clientBName, newTime: clientBNewTime },
+    });
   };
 
   const handleCreateAppointment = (e: React.FormEvent) => {
@@ -494,37 +886,25 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
     <div className={`w-full h-full flex flex-col justify-between overflow-hidden ${
       isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
     }`}>
-      {/* Cabeçalho da Seção: Título na Esquerda | "Hoje" + Ícone de Agenda do Mês na Direita */}
-      <div className={`p-3.5 border-b shrink-0 flex items-center justify-between gap-2 ${
+      {/* Cabeçalho da Seção: Título na Esquerda | "Hoje" + Trava + Agendar na Direita */}
+      <div className={`p-3 border-b shrink-0 flex items-center justify-between gap-2 ${
         isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200'
       }`}>
         <div className="flex items-center gap-2 min-w-0">
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h2 className="text-xs font-bold font-['Poppins'] truncate">Agenda de Atendimentos</h2>
-              <span className={`text-[10px] font-bold font-mono px-1.5 py-0.2 rounded-[4px] border ${
-                isDark ? 'bg-slate-900 border-slate-800 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
-              }`}>
-                {isSelectedDateToday 
-                  ? 'Hoje' 
-                  : selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-              </span>
-            </div>
+            <h2 className="text-xs font-bold font-['Poppins'] truncate">Agenda de Atendimentos</h2>
             <p className="text-[10px] text-slate-400">
-              {sortedAppointments.length} horários listados
+              {selectedDayAppointments.length} agendamento{selectedDayAppointments.length === 1 ? '' : 's'} no dia
             </p>
           </div>
         </div>
 
-        {/* Lado Direito: Botão "Hoje" e ao lado direito dele o Ícone de Agenda do Mês */}
+        {/* Lado Direito: Botão "Hoje" + Trava + Novo Agendamento */}
         <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
-            onClick={() => {
-              hapticLight();
-              setSelectedDate(new Date());
-            }}
-            className={`px-3 py-1.5 rounded-[4px] border text-xs font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
+            onClick={handleGoToToday}
+            className={`px-2.5 py-1.5 rounded-[4px] border text-xs font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
               isSelectedDateToday
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
                 : isDark
@@ -539,42 +919,24 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
             type="button"
             onClick={() => {
               hapticLight();
-              setCalendarViewDate(new Date(selectedDate));
-              setIsCalendarModalOpen(true);
-            }}
-            title="Agenda do Mês / Calendário"
-            className={`p-1.5 rounded-[4px] border transition cursor-pointer flex items-center justify-center active:scale-98 ${
-              isCalendarModalOpen
-                ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                : isDark
-                ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/50'
-                : 'bg-white border-slate-200 text-slate-700 hover:text-emerald-600 hover:border-emerald-500/50'
-            }`}
-          >
-            <Calendar className={`w-4 h-4 ${isCalendarModalOpen ? 'text-white' : 'text-emerald-400'}`} />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              hapticLight();
               setIsBlockModalOpen(true);
             }}
             title="Trava de Emergência / Bloquear Horário"
-            className={`px-2.5 py-1.5 rounded-[4px] border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
+            className={`px-2 py-1.5 rounded-[4px] border text-[11px] font-bold transition cursor-pointer flex items-center gap-1 active:scale-98 ${
               isDark
                 ? 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25'
                 : 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100'
             }`}
           >
             <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Trava / Bloqueio</span>
+            <span className="hidden sm:inline">Trava</span>
           </button>
 
           <button
             type="button"
             onClick={() => {
               hapticLight();
+              setSelectedTime('14:00');
               setIsNewModalOpen(true);
             }}
             title="Novo Agendamento Manual"
@@ -586,572 +948,1096 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
         </div>
       </div>
 
+      {/* 1. SEÇÃO FIXA NO TOPO: Calendário Mensal com Seleção do Dia do Mês */}
+      <div className={`border-b shrink-0 px-3 py-2.5 ${
+        isDark ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-slate-200'
+      }`}>
+        {/* Barra do Mês: Navegação com Mês / Ano */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handlePrevMonth}
+              disabled={!isCurrentMonthOrFuture}
+              title={!isCurrentMonthOrFuture ? 'Meses anteriores indisponíveis' : 'Mês anterior'}
+              className={`p-1 rounded-[4px] border transition ${
+                !isCurrentMonthOrFuture
+                  ? 'opacity-20 cursor-not-allowed border-transparent text-slate-600'
+                  : isDark
+                  ? 'border-slate-800 bg-slate-900/80 hover:bg-slate-800 cursor-pointer text-slate-400 hover:text-white'
+                  : 'border-slate-200 bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
 
+            <span className="text-xs font-bold font-['Poppins'] uppercase tracking-wider text-emerald-400 select-none">
+              {MONTH_NAMES[calendarViewDate.getMonth()]} {calendarViewDate.getFullYear()}
+            </span>
 
-      {/* 4. Lista Ordenada pela Demanda do Dia (Confirmados -> Pendentes -> Concluídos -> Cancelados) */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1.5">
-        {sortedAppointments.length === 0 ? (
-          <div className={`p-6 rounded-[4px] border text-center my-4 ${
-            isDark ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
-          }`}>
-            <Clock className="w-6 h-6 mx-auto mb-1.5 text-slate-500" />
-            <p className="text-xs font-bold">Nenhum agendamento nesta categoria</p>
-            <p className="text-[10px] mt-0.5 text-slate-500">
-              {filter === 'todos' ? 'Toque em "+ Novo" para cadastrar um atendimento.' : 'Nenhum item encontrado para este filtro.'}
-            </p>
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              className={`p-1 rounded-[4px] border transition cursor-pointer text-slate-400 hover:text-white ${
+                isDark ? 'border-slate-800 bg-slate-900/80 hover:bg-slate-800' : 'border-slate-200 bg-slate-100 hover:bg-slate-200'
+              }`}
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-        ) : (
-            sortedAppointments.map((app, index) => {
-              const catInfo = getStatusCategory(app.status);
-              const prevCatKey = index > 0 ? getStatusCategory(sortedAppointments[index - 1].status).key : null;
-              const isCategoryHeader = filter === 'todos' && catInfo.key !== prevCatKey;
 
-              const isCollapsed = !!collapsedCategories[catInfo.key];
-
-              const clientDisplayName = app.customerName || app.clientName || 'Cliente';
-              const serviceDisplayName = app.service || app.serviceTitle || 'Serviço';
-              const appointmentTime = app.time || (app.dateTime ? app.dateTime.split('às')[1] : '09:00') || '09:00';
-
-              return (
-                <React.Fragment key={app.protocolCode || app.id || index}>
-                  {/* Banner divisor de categoria no modo 'todos' — agora um botão interativo expansível */}
-                  {isCategoryHeader && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCategory(catInfo.key);
-                      }}
-                      className={`w-full text-left mt-2.5 mb-1 px-2.5 py-1.5 rounded-[4px] border flex items-center justify-between transition cursor-pointer select-none active:scale-99 ${
-                        isDark 
-                          ? 'bg-slate-900/80 border-slate-800 text-slate-200 hover:bg-slate-900/95 hover:border-slate-700' 
-                          : 'bg-slate-100 border-slate-200 text-slate-800 hover:bg-slate-200/80 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        {isCollapsed ? (
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        )}
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${catInfo.dotColor}`} />
-                        <span className={`text-[10px] font-extrabold uppercase tracking-wider truncate ${catInfo.badgeText}`}>
-                          {catInfo.label}
-                        </span>
-                      </div>
-                      <span className="text-[9.5px] font-mono font-bold text-slate-400 shrink-0">
-                        {categoryCounts[catInfo.key]} {categoryCounts[catInfo.key] === 1 ? 'item' : 'itens'}
-                      </span>
-                    </button>
-                  )}
-
-                  {!isCollapsed && (
-                    <div
-                      onClick={() => {
-                        hapticLight();
-                        setSelectedAppointment(app);
-                      }}
-                      className={`p-2.5 rounded-[4px] border grid grid-cols-12 gap-2 items-center transition cursor-pointer group ${
-                        isDark 
-                          ? 'bg-slate-900/90 border-slate-800/90 hover:border-emerald-500/60 hover:bg-slate-900' 
-                          : 'bg-white border-slate-200 hover:border-emerald-500/60 hover:bg-slate-50 shadow-2xs'
-                      } ${catInfo.key === 'cancelados' ? 'opacity-60' : ''}`}
-                    >
-                      {/* Coluna 1: Horário */}
-                      <div className="col-span-3 shrink-0 flex flex-col items-start justify-center">
-                        <div className={`px-2.5 py-1.5 rounded-[4px] border transition flex items-center justify-center ${
-                          isDark 
-                            ? 'bg-slate-900/90 border-emerald-500/30 group-hover:border-emerald-500/60' 
-                            : 'bg-emerald-50/60 border-emerald-200 group-hover:border-emerald-400'
-                        }`}>
-                          <span className="text-base font-black font-mono tracking-tight text-emerald-400 leading-none">
-                            {appointmentTime.trim()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Coluna 2: Informações Empilhadas (Serviço ACIMA do Cliente) */}
-                      <div className="col-span-6 min-w-0 flex flex-col justify-center gap-0.5">
-                        {/* Serviço (ACIMA) */}
-                        <p className={`text-[11px] font-extrabold truncate ${
-                          isDark ? 'text-slate-100' : 'text-slate-900'
-                        }`}>
-                          {serviceDisplayName}
-                        </p>
-                        {/* Cliente (ABAIXO) */}
-                        <h4 className={`text-[10px] font-bold truncate group-hover:text-emerald-400 transition ${
-                          isDark ? 'text-slate-400' : 'text-slate-500'
-                        }`}>
-                          {clientDisplayName}
-                        </h4>
-                      </div>
-
-                      {/* Coluna 3: Selo de Status da Demanda */}
-                      <div className="col-span-3 min-w-0 flex items-center justify-end">
-                        <span className={`inline-block px-1.5 py-0.2 rounded-[4px] text-[8px] font-extrabold uppercase tracking-wider border whitespace-nowrap ${catInfo.badgeFullClass}`}>
-                          {catInfo.shortLabel}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })
-        )}
-      </div>
-
-      {/* MODAL: Calendário do Mês */}
-      {isCalendarModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/80 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setIsCalendarModalOpen(false)}
-        >
-          <div 
-            className={`w-full max-w-sm rounded-[4px] overflow-hidden shadow-2xl border flex flex-col ${
-              isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Cabeçalho do Calendário */}
-            <div className={`p-3.5 border-b flex items-center justify-between ${
-              isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50'
-            }`}>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-xs font-bold font-['Poppins']">
-                  Calendário da Agenda
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsCalendarModalOpen(false)}
-                className="p-1 rounded-[4px] text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Navegação de Mês */}
-            <div className="p-3 border-b border-slate-800/60 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  const prev = new Date(calendarViewDate);
-                  prev.setMonth(prev.getMonth() - 1);
-                  setCalendarViewDate(prev);
-                }}
-                className={`p-1.5 rounded-[4px] border text-slate-400 hover:text-white cursor-pointer ${
-                  isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-100'
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <span className="text-xs font-bold font-['Poppins'] uppercase tracking-wider text-emerald-400">
-                {MONTH_NAMES[calendarViewDate.getMonth()]} {calendarViewDate.getFullYear()}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  const next = new Date(calendarViewDate);
-                  next.setMonth(next.getMonth() + 1);
-                  setCalendarViewDate(next);
-                }}
-                className={`p-1.5 rounded-[4px] border text-slate-400 hover:text-white cursor-pointer ${
-                  isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-slate-100'
-                }`}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Grid do Calendário */}
-            <div className="p-3">
-              <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase mb-2">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName) => (
-                  <div key={dayName}>{dayName}</div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1">
-                {monthGridDays.map((gridItem, idx) => {
-                  if (!gridItem.date) {
-                    return <div key={`empty-${idx}`} className="h-8" />;
-                  }
-
-                  const isSel = isSameDay(gridItem.date, selectedDate);
-                  const isTod = isSameDay(gridItem.date, new Date());
-
-                  return (
-                    <button
-                      key={gridItem.date.toISOString()}
-                      type="button"
-                      onClick={() => {
-                        hapticSuccess();
-                        setSelectedDate(gridItem.date!);
-                        setIsCalendarModalOpen(false);
-                      }}
-                      className={`h-8 rounded-[4px] text-xs font-bold transition flex items-center justify-center cursor-pointer ${
-                        isSel
-                          ? 'bg-emerald-500 text-white font-extrabold shadow-xs'
-                          : isTod
-                          ? 'border-2 border-emerald-500 text-emerald-400 font-bold'
-                          : isDark
-                          ? 'bg-slate-900/60 hover:bg-slate-800 text-slate-300'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
-                      }`}
-                    >
-                      {gridItem.date.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Rodapé do Modal */}
-            <div className={`p-3 border-t flex items-center justify-between ${
-              isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-200 bg-slate-50'
-            }`}>
-              <button
-                type="button"
-                onClick={() => {
-                  hapticLight();
-                  const today = new Date();
-                  setSelectedDate(today);
-                  setCalendarViewDate(today);
-                  setIsCalendarModalOpen(false);
-                }}
-                className="text-xs font-bold text-emerald-400 hover:underline cursor-pointer"
-              >
-                Ir para Hoje
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsCalendarModalOpen(false)}
-                className={`px-3 py-1.5 rounded-[4px] border text-xs font-bold cursor-pointer ${
-                  isDark ? 'border-slate-800 text-slate-300 hover:bg-slate-900' : 'border-slate-200 text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                Fechar
-              </button>
-            </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setIsCalendarCollapsed(!isCalendarCollapsed);
+              }}
+              className={`px-2.5 py-1 rounded-[4px] text-[10px] font-bold border transition flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap shadow-xs ${
+                isCalendarCollapsed
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 hover:border-emerald-400'
+                  : isDark
+                  ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+                  : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span>{isCalendarCollapsed ? 'Expandir Dias' : 'Recolher Dias'}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCalendarCollapsed ? '-rotate-90 text-emerald-400' : 'rotate-0 text-slate-400'}`} />
+            </button>
           </div>
         </div>
-      )}
 
-      {/* 5. MODAL: Detalhes Completos do Serviço e Atendimento */}
-      {selectedAppointment && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/80 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setSelectedAppointment(null)}
-        >
-          <div 
-            className={`w-full max-w-md rounded-[4px] overflow-hidden shadow-2xl border flex flex-col max-h-[90vh] ${
-              isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Topo do Modal */}
-            <div className={`p-3.5 border-b flex items-center justify-between shrink-0 ${
-              isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50'
-            }`}>
-              <div className="flex items-center gap-2 min-w-0">
-                {(() => {
-                  const cat = getStatusCategory(selectedAppointment.status);
-                  return (
-                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-wider border ${cat.badgeFullClass}`}>
-                      {cat.shortLabel}
-                    </span>
-                  );
-                })()}
-                <span className="text-xs font-mono font-bold text-slate-400">
-                  #{selectedAppointment.protocolCode}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setSelectedAppointment(null)}
-                className="p-1.5 rounded-[4px] text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        {/* Grade do Calendário Mensal */}
+        {!isCalendarCollapsed && (
+          <div>
+            {/* Cabeçalho dos Dias da Semana */}
+            <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-bold text-slate-400 uppercase mb-1">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((dayName) => (
+                <div key={dayName} className="py-0.5">{dayName}</div>
+              ))}
             </div>
 
-            {/* Conteúdo Rolável do Modal */}
-            <div className="p-4 overflow-y-auto space-y-3.5 text-xs">
-              {/* Contexto especial para Pendentes ou Alterações */}
-              {(() => {
-                const stUpper = (selectedAppointment.status || '').toUpperCase();
-                const isAlter = stUpper.includes('ALTER') || stUpper.includes('REMANEJ') || stUpper.includes('REAGEND');
-
-                if (isAlter) {
-                  return (
-                    <div className="p-2.5 rounded-[4px] bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 shrink-0 text-amber-400" />
-                      <span>Solicitação de alteração de horário. Aguardando aceite mútuo para ser confirmado.</span>
-                    </div>
-                  );
+            {/* Grid dos Dias do Mês (7 colunas) */}
+            <div className="grid grid-cols-7 gap-1">
+              {monthGridDays.map((gridItem, idx) => {
+                if (!gridItem.date) {
+                  return <div key={`empty-${idx}`} className="h-7" />;
                 }
 
-                const catKey = getStatusCategory(selectedAppointment.status).key;
-                if (catKey === 'pendentes') {
-                  return (
-                    <div className="p-2.5 rounded-[4px] bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
-                      <Clock className="w-4 h-4 shrink-0 text-amber-400" />
-                      <span>Agendamento realizado pelo cliente. Aguardando sua confirmação.</span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-
-              {/* Bloco 1: Serviço & Valor */}
-              <div className={`p-3 rounded-[4px] border space-y-1.5 ${
-                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Serviço Agendado
-                    </span>
-                    <h3 className="text-sm font-bold font-['Poppins'] text-emerald-400 mt-0.5">
-                      {selectedAppointment.serviceTitle || selectedAppointment.service || 'Serviço'}
-                    </h3>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                      Valor
-                    </span>
-                    <span className="text-sm font-black text-emerald-400 block">
-                      R$ {Number(selectedAppointment.totalPrice || 0).toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-800/60 grid grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Duração Estimada</span>
-                    <span className="font-bold flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3 text-emerald-400" />
-                      {selectedAppointment.duration || '40 min'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Profissional</span>
-                    <span className="font-bold flex items-center gap-1 mt-0.5">
-                      <User className="w-3 h-3 text-emerald-400" />
-                      {selectedAppointment.professionalName || selectedAppointment.professional || 'Carlos Henrique'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bloco 2: Horário Agendado para Atendimento */}
-              <div className={`p-3 rounded-[4px] border space-y-1 ${
-                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Data e Horário do Atendimento
-                </span>
-                <div className="flex items-center gap-2 text-xs font-bold text-white">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{selectedAppointment.dateTime || selectedAppointment.dayGroup || 'Hoje'}</span>
-                  {selectedAppointment.time && (
-                    <span className="text-emerald-400 font-mono">({selectedAppointment.time})</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Bloco 3: Registro de Agendamento (Reserva) */}
-              <div className={`p-3 rounded-[4px] border space-y-1 ${
-                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Data/Hora da Realização do Agendamento
-                </span>
-                <p className="text-xs font-medium text-slate-300">
-                  {selectedAppointment.createdAt || '15/09/2026 às 14:32'}
-                </p>
-              </div>
-
-              {/* Bloco 4: Dados de Contato do Cliente */}
-              <div className={`p-3 rounded-[4px] border space-y-2 ${
-                isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
-                  Contato do Cliente
-                </span>
-
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xs font-black shrink-0">
-                      {(selectedAppointment.customerName || selectedAppointment.clientName || 'C')[0].toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs truncate text-white">
-                        {selectedAppointment.customerName || selectedAppointment.clientName || 'Cliente sem nome'}
-                      </p>
-                      <p className="text-[10.5px] text-slate-400 truncate flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        {selectedAppointment.customerPhone || selectedAppointment.clientPhone || '(41) 99123-4567'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ações de Contato Rápido (Chat Interno no App & Ligação) */}
-                {(selectedAppointment.customerPhone || selectedAppointment.clientPhone) && (
-                  <div className="pt-2 border-t border-slate-800/60 grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hapticLight();
-                        openChatForAppointment(selectedAppointment);
-                      }}
-                      className="py-1.5 px-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10.5px] flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-98 shadow-xs"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 text-white" />
-                      <span>Mensagem no App</span>
-                    </button>
-                    <a
-                      href={`tel:${(selectedAppointment.customerPhone || selectedAppointment.clientPhone || '').replace(/\D/g, '')}`}
-                      className={`py-1.5 px-2 rounded-[4px] border font-bold text-[10.5px] flex items-center justify-center gap-1.5 transition ${
-                        isDark ? 'bg-slate-800 border-slate-700 text-slate-200 hover:border-slate-600' : 'bg-white border-slate-300 text-slate-800'
-                      }`}
-                    >
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Ligar</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Rodapé Fixo de Ação do Modal */}
-            <div className={`p-3 border-t sticky bottom-0 z-20 flex flex-col gap-2 ${
-              isDark ? 'border-slate-800 bg-slate-950/95' : 'border-slate-200 bg-white/95'
-            } backdrop-blur-xs`}>
-              {(() => {
-                const stUpper = (selectedAppointment.status || '').toUpperCase();
-                const isAlter = stUpper.includes('ALTER') || stUpper.includes('REMANEJ') || stUpper.includes('REAGEND');
-
-                if (isAlter) {
-                  return (
-                    <div className="flex items-center gap-2 w-full">
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
-                        className="flex-1 py-2 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <X className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Recusar</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
-                        className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-                      >
-                        <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
-                        <span>Aceitar Alteração</span>
-                      </button>
-                    </div>
-                  );
-                }
-
-                const catKey = getStatusCategory(selectedAppointment.status).key;
-
-                if (catKey === 'pendentes') {
-                  return (
-                    <div className="flex items-center gap-2 w-full">
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
-                        className="flex-1 py-2 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <X className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Recusar</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
-                        className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-                      >
-                        <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
-                        <span>Confirmar</span>
-                      </button>
-                    </div>
-                  );
-                }
-
-                if (selectedAppointment.isBlockedSlot || selectedAppointment.status === 'BLOQUEADO') {
-                  return (
-                    <div className="flex items-center gap-2 w-full">
-                      <button
-                        type="button"
-                        onClick={() => handleUnblockSlot(selectedAppointment.protocolCode)}
-                        className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                      >
-                        <Unlock className="w-3.5 h-3.5 text-white" />
-                        <span>Desbloquear Horário</span>
-                      </button>
-                    </div>
-                  );
-                }
-
-                if (catKey === 'confirmados') {
-                  return (
-                    <div className="grid grid-cols-3 gap-1.5 w-full">
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'ALTERAÇÃO')}
-                        className="py-2 px-1 rounded-[4px] border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <RefreshCw className="w-3 h-3 text-amber-400" />
-                        <span>Remanejar</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
-                        className="py-2 px-1 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
-                      >
-                        <X className="w-3 h-3 text-rose-400" />
-                        <span>Cancelar</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          hapticLight();
-                          setPaymentSelectingAppointment(selectedAppointment);
-                        }}
-                        className="py-2 px-1 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10.5px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
-                      >
-                        <Check className="w-3 h-3 text-white stroke-[2.5]" />
-                        <span>Concluir</span>
-                      </button>
-                    </div>
-                  );
-                }
+                const isPast = isBeforeToday(gridItem.date);
+                const isSel = !isPast && isSameDay(gridItem.date, selectedDate);
+                const isTod = isSameDay(gridItem.date, new Date());
+                const dateIsoStr = `${gridItem.date.getFullYear()}-${(gridItem.date.getMonth() + 1).toString().padStart(2, '0')}-${gridItem.date.getDate().toString().padStart(2, '0')}`;
+                const hasAppointments = !isPast && daysWithAppointments.has(dateIsoStr);
 
                 return (
                   <button
+                    key={gridItem.date.toISOString()}
                     type="button"
-                    onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
-                    className="w-full py-2 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                    disabled={isPast}
+                    onClick={() => {
+                      if (isPast) return;
+                      hapticLight();
+                      setSelectedDate(gridItem.date!);
+                    }}
+                    className={`h-7 sm:h-8 rounded-[4px] text-xs font-bold transition flex flex-col items-center justify-center relative select-none ${
+                      isPast
+                        ? isDark
+                          ? 'opacity-25 cursor-not-allowed bg-slate-950/20 text-slate-600 border border-transparent'
+                          : 'opacity-30 cursor-not-allowed bg-slate-100/50 text-slate-400 border border-transparent'
+                        : isSel
+                        ? 'bg-emerald-500 text-white font-black shadow-xs cursor-pointer'
+                        : isTod
+                        ? 'border border-emerald-500/80 text-emerald-400 font-bold bg-emerald-500/10 cursor-pointer hover:bg-emerald-500/20'
+                        : isDark
+                        ? 'bg-slate-900/70 hover:bg-slate-800 text-slate-300 cursor-pointer'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-800 cursor-pointer'
+                    }`}
                   >
-                    <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Reativar Agendamento</span>
+                    <span className={isPast ? 'text-slate-600' : ''}>{gridItem.date.getDate()}</span>
+                    {hasAppointments && (
+                      <span className={`w-1 h-1 rounded-full absolute bottom-0.5 ${
+                        isSel ? 'bg-white' : 'bg-emerald-400'
+                      }`} />
+                    )}
                   </button>
                 );
-              })()}
+              })}
             </div>
           </div>
+        )}
+      </div>
+
+      {/* 2. BARRA DE RESUMO DO DIA SELECIONADO & FILTROS DE HORÁRIO */}
+      <div className={`px-3 py-2 border-b shrink-0 flex items-center justify-between gap-2 ${
+        isDark ? 'bg-slate-950 border-slate-800/80' : 'bg-slate-50 border-slate-200'
+      }`}>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-white truncate">
+            {formatSelectedDateHeading(selectedDate)}
+          </p>
         </div>
-      )}
+
+        {/* Chips de Filtro: Todos / Confirmados / Livres / Concluídos */}
+        <div className="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none">
+          {[
+            { id: 'todos', label: 'Todos', count: timelineData.items.length },
+            { id: 'confirmados', label: 'Confirmados', count: timelineData.totalConfirmed },
+            { id: 'livres', label: 'Livres', count: timelineData.totalFreeSlots },
+            { id: 'concluidos', label: 'Concluídos', count: timelineData.totalCompleted },
+          ].map((tab) => {
+            const isTabActive = slotFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  setSlotFilter(tab.id as 'todos' | 'confirmados' | 'livres' | 'concluidos');
+                }}
+                className={`px-2 py-0.5 rounded-[4px] text-[10px] font-bold border transition cursor-pointer whitespace-nowrap active:scale-98 ${
+                  isTabActive
+                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                    : isDark
+                    ? 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    : 'bg-white border-slate-300 text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. AGENDA DINÂMICA DE HORÁRIOS */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3">
+        {/* Régua Superior: Próximas Vagas Livres da Cadeira (Acesso Rápido) */}
+        {timelineData.freeSlotsSummary.length > 0 ? (
+          <div className={`p-2.5 rounded-[4px] border mb-3 ${
+            isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            <div className="flex items-center justify-between gap-1 mb-2 px-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span>Próximas Vagas Livres ({timelineData.totalFreeSlots})</span>
+              </span>
+              <span className="text-[9px] text-slate-500 font-medium">
+                Toque para encaixar
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
+              {timelineData.freeSlotsSummary.map((slot) => (
+                <button
+                  key={slot.time}
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    setSelectedTime(slot.time);
+                    setIsNewModalOpen(true);
+                  }}
+                  title={`Encaixar cliente às ${slot.time} (${slot.durationText} livres)`}
+                  className="px-2.5 py-1.5 rounded-[4px] border border-dashed border-emerald-500/60 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 hover:text-white text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 active:scale-95 transition cursor-pointer"
+                >
+                  <span>{slot.time}</span>
+                  <span className="text-[9px] font-sans px-1.5 py-0.2 rounded-[2px] bg-emerald-500/25 text-emerald-300 font-bold">
+                    {slot.durationText}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : timelineData.totalAppointments > 0 ? (
+          <div className={`px-3 py-2 rounded-[4px] border mb-3 flex items-center justify-between text-xs font-bold ${
+            isDark ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              Dia 100% Ocupado • Sem intervalos vagos
+            </span>
+          </div>
+        ) : null}
+
+        {/* Barra de Ferramentas: Alternador Grid de Horas / Lista */}
+        <div className="flex items-center justify-end mb-2 px-0.5">
+          {/* Toggle Grid de Horas (Minicards Poupatempo/Clínica) vs Lista */}
+          <div className={`flex items-center border rounded-[4px] p-0.5 shrink-0 ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
+          }`}>
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setViewMode('grid');
+              }}
+              title="Grid de Horas (Minicards estilo Poupatempo)"
+              className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition ${
+                viewMode === 'grid'
+                  ? 'bg-emerald-500 text-white shadow-xs'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="w-3 h-3" />
+              <span>Grid</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                hapticLight();
+                setViewMode('lista');
+              }}
+              title="Lista Detalhada de Horários"
+              className={`px-2 py-0.5 rounded-[3px] text-[10px] font-bold flex items-center gap-1 cursor-pointer transition ${
+                viewMode === 'lista'
+                  ? 'bg-emerald-500 text-white shadow-xs'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <List className="w-3 h-3" />
+              <span>Lista</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Conteúdo: Grid de Horas ou Lista */}
+        {visibleTimelineItems.length === 0 ? (
+          <div className={`p-8 rounded-[4px] border text-center my-4 ${
+            isDark ? 'bg-slate-900/40 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
+          }`}>
+            <Clock className="w-8 h-8 mx-auto mb-2 text-slate-500" />
+            <p className="text-xs font-bold text-white">Nenhum horário neste filtro</p>
+            <p className="text-[10px] mt-0.5 text-slate-400">
+              {slotFilter === 'confirmados'
+                ? 'Nenhum agendamento confirmado para este dia.'
+                : slotFilter === 'livres' 
+                ? 'Todos os horários estão ocupados para esta data!' 
+                : slotFilter === 'concluidos'
+                ? 'Nenhum atendimento concluído encontrado para este dia.'
+                : 'Nenhum agendamento ou horário encontrado para este dia.'}
+            </p>
+          </div>
+        ) : viewMode === 'grid' ? (
+          /* ======================================================== */
+          /* MODO GRID: 3 COLUNAS COM AJUSTE PRECISO DE ELEMENTOS     */
+          /* ======================================================== */
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            {visibleTimelineItems.map((item) => {
+              // 1. Vaga Livre no Grid
+              if (item.type === 'FREE_SLOT') {
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      hapticLight();
+                      setSelectedTime(item.startTime);
+                      setIsNewModalOpen(true);
+                    }}
+                    className={`p-2 sm:p-2.5 rounded-[4px] border border-dashed transition flex flex-col justify-between items-start text-left cursor-pointer select-none active:scale-[0.97] min-h-[58px] sm:min-h-[62px] ${
+                      isDark
+                        ? 'bg-slate-900/40 border-emerald-500 hover:border-emerald-400 hover:bg-emerald-950/20'
+                        : 'bg-emerald-50/40 border-emerald-500 hover:border-emerald-600 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 w-full">
+                      <span className="font-mono text-sm sm:text-base font-black text-emerald-400 tracking-tight leading-none">
+                        {item.startTime}
+                      </span>
+                      <span className="text-[7px] sm:text-[7.5px] font-black uppercase px-1 sm:px-1.5 py-0.5 rounded-[2px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 whitespace-nowrap">
+                        Livre
+                      </span>
+                    </div>
+                    <div className="mt-1.5 w-full">
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-emerald-400 truncate">
+                        Disponível
+                      </p>
+                    </div>
+                  </button>
+                );
+              }
+
+              // 2. Atendimento no Grid
+              const app = item.appointment!;
+              const catInfo = getStatusCategory(app.status, app.swapRequest);
+              const clientName = app.customerName || app.clientName || 'Cliente';
+              const isBlocked = app.isBlockedSlot || app.status === 'BLOQUEADO';
+
+              if (isBlocked) {
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      hapticLight();
+                      setSelectedAppointment(app);
+                    }}
+                    className={`p-2 sm:p-2.5 rounded-[4px] border transition flex flex-col justify-between items-start text-left cursor-pointer select-none active:scale-[0.97] min-h-[58px] sm:min-h-[62px] ${
+                      isDark
+                        ? 'bg-amber-950/20 border-amber-500 hover:border-amber-400'
+                        : 'bg-amber-50 border-amber-500 hover:border-amber-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1 w-full">
+                      <span className="font-mono text-sm sm:text-base font-black text-amber-300 tracking-tight leading-none">
+                        {item.startTime}
+                      </span>
+                      <span className="text-[7px] sm:text-[7.5px] font-black uppercase px-1 sm:px-1.5 py-0.5 rounded-[2px] bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 whitespace-nowrap">
+                        Trava
+                      </span>
+                    </div>
+                    <div className="mt-1.5 w-full">
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-amber-400 truncate">
+                        {app.blockReason || 'Bloqueado'}
+                      </p>
+                    </div>
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    hapticLight();
+                    setSelectedAppointment(app);
+                  }}
+                  className={`p-2 sm:p-2.5 rounded-[4px] border transition flex flex-col justify-between items-start text-left cursor-pointer select-none active:scale-[0.97] min-h-[58px] sm:min-h-[62px] shadow-2xs ${
+                    isDark
+                      ? `bg-slate-900 ${catInfo.cardBorderDark}`
+                      : `bg-white ${catInfo.cardBorderLight}`
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 w-full">
+                    <span className="font-mono text-sm sm:text-base font-black text-white tracking-tight leading-none">
+                      {item.startTime}
+                    </span>
+                    <span className={`text-[7px] sm:text-[7.5px] font-black uppercase px-1 sm:px-1.5 py-0.5 rounded-[2px] shrink-0 whitespace-nowrap ${
+                      catInfo.key === 'confirmados'
+                        ? 'bg-emerald-600 text-white'
+                        : catInfo.badgeFullClass
+                    }`}>
+                      {catInfo.shortLabel}
+                    </span>
+                  </div>
+
+                  <div className="mt-1.5 w-full">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-200 truncate">
+                      {clientName}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* ======================================================== */
+          /* MODO LISTA: LINHA DO TEMPO SEQUENCIAL SEM REDUNDÂNCIA    */
+          /* ======================================================== */
+          <div className="space-y-2">
+            {visibleTimelineItems.map((item) => {
+              if (item.type === 'FREE_SLOT') {
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      hapticLight();
+                      setSelectedTime(item.startTime);
+                      setIsNewModalOpen(true);
+                    }}
+                    className={`p-2.5 rounded-[4px] border border-dashed transition cursor-pointer flex items-center justify-between gap-2.5 select-none ${
+                      isDark
+                        ? 'bg-emerald-950/10 border-emerald-500 hover:border-emerald-400 hover:bg-emerald-950/20'
+                        : 'bg-emerald-50/50 border-emerald-500 hover:border-emerald-600 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-sm sm:text-base font-black px-2 py-0.5 rounded-[3px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                        {item.startTime}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-emerald-400 truncate">
+                        Vaga Disponível
+                      </span>
+                    </div>
+
+                    <span className="text-[8.5px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-[3px] border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 shrink-0">
+                      Livre
+                    </span>
+                  </div>
+                );
+              }
+
+              const app = item.appointment!;
+              const catInfo = getStatusCategory(app.status, app.swapRequest);
+              const clientName = app.customerName || app.clientName || 'Cliente';
+              const isBlocked = app.isBlockedSlot || app.status === 'BLOQUEADO';
+
+              if (isBlocked) {
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      hapticLight();
+                      setSelectedAppointment(app);
+                    }}
+                    className={`p-2.5 rounded-[4px] border transition cursor-pointer select-none active:scale-[0.99] flex items-center justify-between gap-2.5 ${
+                      isDark
+                        ? 'bg-amber-950/20 border-amber-500 hover:border-amber-400'
+                        : 'bg-amber-50/80 border-amber-500 hover:border-amber-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-sm sm:text-base font-black px-2 py-0.5 rounded-[3px] bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                        {item.startTime}
+                      </span>
+                      <span className="text-xs sm:text-sm font-bold text-amber-300 truncate">
+                        {app.blockReason || 'Horário Bloqueado'}
+                      </span>
+                    </div>
+
+                    <span className="text-[8.5px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-[3px] border border-amber-500/40 bg-amber-500/20 text-amber-300 shrink-0">
+                      Trava
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    hapticLight();
+                    setSelectedAppointment(app);
+                  }}
+                  className={`p-2.5 rounded-[4px] border transition cursor-pointer select-none active:scale-[0.99] flex items-center justify-between gap-2.5 shadow-2xs ${
+                    isDark
+                      ? `bg-slate-900 ${catInfo.cardBorderDark}`
+                      : `bg-white ${catInfo.cardBorderLight}`
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="font-mono text-sm sm:text-base font-black px-2 py-0.5 rounded-[3px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                      {item.startTime}
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                      {clientName}
+                    </h4>
+                  </div>
+
+                  <span className={`text-[8.5px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-[3px] border whitespace-nowrap shrink-0 ${
+                    catInfo.key === 'confirmados'
+                      ? 'bg-emerald-600 border-emerald-500 text-white'
+                      : catInfo.badgeFullClass
+                  }`}>
+                    {catInfo.shortLabel}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 5. MODAL: Detalhes Completos do Serviço e Atendimento */}
+      {selectedAppointment && (() => {
+        const statusClean = (selectedAppointment.status || '').toUpperCase().trim();
+        const isConcluded = statusClean === 'CONCLUIDO' || statusClean === 'CONCLUÍDO' || statusClean === 'FINALIZADO' || getStatusCategory(selectedAppointment.status).key === 'concluidos';
+        const cat = getStatusCategory(selectedAppointment.status);
+
+        return (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/80 backdrop-blur-xs animate-in fade-in"
+            onClick={() => setSelectedAppointment(null)}
+          >
+            <div 
+              className={`w-full max-w-md rounded-[4px] overflow-hidden shadow-2xl border flex flex-col max-h-[90vh] ${
+                isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Topo do Modal */}
+              <div className={`p-3.5 border-b flex items-center justify-between shrink-0 ${
+                isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50'
+              }`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  {isConcluded ? (
+                    <span className="px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-wider border bg-blue-500/15 border-blue-500/30 text-blue-300 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-400" />
+                      <span>Concluído</span>
+                    </span>
+                  ) : (
+                    <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-wider border ${cat.badgeFullClass}`}>
+                      {cat.shortLabel}
+                    </span>
+                  )}
+                  <span className="text-xs font-mono font-bold text-slate-400">
+                    #{selectedAppointment.protocolCode}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedAppointment(null)}
+                  className="p-1.5 rounded-[4px] text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Conteúdo Rolável do Modal */}
+              <div className="p-4 overflow-y-auto space-y-3.5 text-xs">
+                {/* Bloco no Topo: Dados do Cliente (sem botões de mensagem no app e ligar) */}
+                <div className={`p-3 rounded-[4px] border space-y-1.5 ${
+                  isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
+                    {isConcluded ? 'Cliente Atendido' : 'Cliente'}
+                  </span>
+
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-[4px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xs font-black shrink-0">
+                        {(selectedAppointment.customerName || selectedAppointment.clientName || 'C')[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-xs truncate text-white">
+                          {selectedAppointment.customerName || selectedAppointment.clientName || 'Cliente sem nome'}
+                        </p>
+                        <p className="text-[10.5px] text-slate-400 truncate flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>{selectedAppointment.customerPhone || selectedAppointment.clientPhone || '(41) 99123-4567'}</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner no Passado para Serviço Concluído */}
+                {isConcluded && (
+                  <div className={`p-2.5 rounded-[4px] border text-xs flex items-center justify-between gap-2 ${
+                    isDark ? 'bg-blue-950/25 border-blue-500/30 text-blue-200' : 'bg-blue-50 border-blue-200 text-blue-800'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-blue-400" />
+                      <div>
+                        <p className="font-bold text-xs">Atendimento Finalizado</p>
+                        <p className="text-[10px] text-blue-300/80">Serviço prestado e registrado no histórico.</p>
+                      </div>
+                    </div>
+                    {selectedAppointment.isPaid ? (
+                      <span className="px-2 py-0.5 rounded-[3px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-[9px] uppercase tracking-wider shrink-0">
+                        {selectedAppointment.paymentMethod ? `Pago (${selectedAppointment.paymentMethod})` : 'Pago'}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-[3px] bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold text-[9px] uppercase tracking-wider shrink-0">
+                        Concluído
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Banner para Atendimento em Andamento */}
+                {!isConcluded && ((selectedAppointment.status || '').toUpperCase().includes('ATEND') || (selectedAppointment.status || '').toUpperCase().includes('INICI')) && (
+                  <div className={`p-2.5 rounded-[4px] border text-xs flex items-center justify-between gap-2 ${
+                    isDark ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200' : 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 shrink-0 text-emerald-400 fill-emerald-400 animate-pulse" />
+                      <div>
+                        <p className="font-bold text-xs">Atendimento Iniciado</p>
+                        <p className="text-[10px] text-emerald-300/80">Serviço em andamento no salão.</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-[3px] bg-emerald-500 text-white font-black text-[9px] uppercase tracking-wider shrink-0">
+                      Ao Vivo
+                    </span>
+                  </div>
+                )}
+
+                {/* Indicador de Próximo a ser Atendido */}
+                {!isConcluded && nextActiveAppointment && nextActiveAppointment.protocolCode === selectedAppointment.protocolCode && !((selectedAppointment.status || '').toUpperCase().includes('ATEND')) && (
+                  <div className={`p-2 rounded-[4px] border text-xs flex items-center justify-between gap-2 ${
+                    isDark ? 'bg-slate-900/90 border-emerald-500/40 text-slate-200' : 'bg-emerald-50/70 border-emerald-300 text-slate-800'
+                  }`}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="font-bold text-[11px] text-emerald-400">Próximo Cliente da Fila</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-400 font-bold">
+                      {selectedAppointment.time || '10:00'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Contexto especial para Solicitação de Troca entre Clientes */}
+                {!isConcluded && selectedAppointment.swapRequest && selectedAppointment.swapRequest.isClientSwap && (
+                  <div className="p-3 rounded-[4px] bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                        <RefreshCw className="w-4 h-4 shrink-0 text-amber-400" />
+                        <span>Proposta de Troca de Horário</span>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-[3px] bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Entre Clientes
+                      </span>
+                    </div>
+
+                    {/* Informação visual dos dois clientes e a troca */}
+                    <div className="p-2.5 rounded-[4px] bg-slate-900/90 border border-slate-800 space-y-2">
+                      {/* Linha da Troca com Horários */}
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        {/* Cliente A */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 uppercase font-bold">
+                            <span>Cliente Solicitante</span>
+                          </div>
+                          <p className="font-bold text-white truncate text-xs mt-0.5">
+                            {selectedAppointment.swapRequest.clientA.name}
+                          </p>
+                          <p className="text-[11px] font-mono font-bold text-amber-400">
+                            {selectedAppointment.swapRequest.clientA.originalTime}
+                          </p>
+                        </div>
+
+                        {/* Ícone de Troca */}
+                        <div className="flex flex-col items-center justify-center shrink-0 px-1">
+                          <ArrowRight className="w-4 h-4 text-emerald-400" />
+                        </div>
+
+                        {/* Cliente B com Ícone de Aceito */}
+                        <div className="flex-1 min-w-0 text-right">
+                          <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-400 uppercase font-bold">
+                            {selectedAppointment.swapRequest.clientB.accepted && (
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                            )}
+                            <span>Aceitou Ajudar</span>
+                          </div>
+                          <p className="font-bold text-white truncate text-xs mt-0.5">
+                            {selectedAppointment.swapRequest.clientB.name}
+                          </p>
+                          <p className="text-[11px] font-mono font-bold text-emerald-400">
+                            {selectedAppointment.swapRequest.clientB.originalTime}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Resumo Direto da Troca */}
+                      <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-300 flex items-center justify-center gap-1 text-center">
+                        <span className="text-white font-bold">{selectedAppointment.swapRequest.clientA.name}</span>
+                        <span className="text-slate-400">({selectedAppointment.swapRequest.clientA.originalTime})</span>
+                        <ArrowRight className="w-3 h-3 text-amber-400 shrink-0 inline mx-0.5" />
+                        <span className="text-white font-bold">{selectedAppointment.swapRequest.clientB.name}</span>
+                        <span className="text-slate-400">({selectedAppointment.swapRequest.clientB.originalTime})</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Contexto especial para Pendentes ou Alterações normais */}
+                {!isConcluded && !selectedAppointment.swapRequest?.isClientSwap && (() => {
+                  const stUpper = (selectedAppointment.status || '').toUpperCase();
+                  const isAlter = stUpper.includes('ALTER') || stUpper.includes('REMANEJ') || stUpper.includes('REAGEND');
+
+                  if (isAlter) {
+                    return (
+                      <div className="p-2.5 rounded-[4px] bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
+                        <RefreshCw className="w-4 h-4 shrink-0 text-amber-400" />
+                        <span>Solicitação de alteração de horário. Aguardando confirmação do estabelecimento.</span>
+                      </div>
+                    );
+                  }
+
+                  const catKey = getStatusCategory(selectedAppointment.status).key;
+                  if (catKey === 'pendentes') {
+                    return (
+                      <div className="p-2.5 rounded-[4px] bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-center gap-2">
+                        <Clock className="w-4 h-4 shrink-0 text-amber-400" />
+                        <span>Agendamento realizado pelo cliente. Aguardando sua confirmação.</span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Bloco 1: Serviço & Valor */}
+                <div className={`p-3 rounded-[4px] border space-y-1.5 ${
+                  isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
+                        {isConcluded ? 'Serviço Realizado' : 'Serviço Agendado'}
+                      </span>
+                      <h3 className="text-sm font-bold font-['Poppins'] text-emerald-400 mt-0.5">
+                        {selectedAppointment.serviceTitle || selectedAppointment.service || 'Serviço'}
+                      </h3>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
+                        {isConcluded ? 'Valor Pago' : 'Valor'}
+                      </span>
+                      <span className="text-sm font-black text-emerald-400 block">
+                        R$ {Number(selectedAppointment.totalPrice || 0).toFixed(2).replace('.', ',')}
+                      </span>
+                      {isConcluded && (
+                        <span className="text-[9px] text-slate-400 font-medium block mt-0.5">
+                          {selectedAppointment.isPaid ? `✓ Pago via ${selectedAppointment.paymentMethod || 'Caixa'}` : 'Finalizado'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/60 grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">
+                        {isConcluded ? 'Tempo de Atendimento' : 'Duração Estimada'}
+                      </span>
+                      <span className="font-bold flex items-center gap-1 mt-0.5">
+                        <Clock className="w-3 h-3 text-emerald-400" />
+                        {selectedAppointment.duration || '40 min'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">
+                        {isConcluded ? 'Atendido por' : 'Profissional'}
+                      </span>
+                      <span className="font-bold flex items-center gap-1 mt-0.5">
+                        <User className="w-3 h-3 text-emerald-400" />
+                        {selectedAppointment.professionalName || selectedAppointment.professional || 'Carlos Henrique'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bloco 2: Período do Atendimento (Tratado no Passado quando Concluído) */}
+                <div className={`p-3 rounded-[4px] border space-y-2 ${
+                  isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
+                      {isConcluded ? 'Horário da Realização' : 'Horário do Atendimento'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {isConcluded 
+                        ? `Realizado em: ${selectedAppointment.dateTime || selectedAppointment.dayGroup || 'Hoje'}`
+                        : (selectedAppointment.dateTime || selectedAppointment.dayGroup || 'Hoje')}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <div className={`p-2 rounded-[4px] border text-center ${
+                      isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-white border-slate-200'
+                    }`}>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block">
+                        {isConcluded ? 'Iniciado às' : 'Início'}
+                      </span>
+                      <span className="text-xs font-mono font-black text-emerald-400 block mt-0.5">
+                        {selectedAppointment.time || '09:00'}
+                      </span>
+                    </div>
+
+                    <div className={`p-2 rounded-[4px] border text-center ${
+                      isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-white border-slate-200'
+                    }`}>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block">
+                        {isConcluded ? 'Tempo Total' : 'Duração'}
+                      </span>
+                      <span className="text-xs font-bold text-white block mt-0.5">
+                        {selectedAppointment.duration || '40 min'}
+                      </span>
+                    </div>
+
+                    <div className={`p-2 rounded-[4px] border text-center ${
+                      isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-white border-slate-200'
+                    }`}>
+                      <span className="text-[9px] uppercase tracking-wider text-slate-400 block">
+                        {isConcluded ? 'Finalizado às' : 'Término Previsto'}
+                      </span>
+                      <span className="text-xs font-mono font-black text-emerald-400 block mt-0.5">
+                        {calculateEndTime(selectedAppointment.time || '09:00', selectedAppointment.duration || '40 min')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isConcluded && (
+                    <div className="pt-1.5 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/40">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-blue-400" />
+                        <span>Expediente encerrado às {calculateEndTime(selectedAppointment.time || '09:00', selectedAppointment.duration || '40 min')}</span>
+                      </span>
+                      <span className="font-mono text-emerald-400 font-bold">Histórico Fechado</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bloco 3: Registro de Agendamento */}
+                <div className={`p-3 rounded-[4px] border space-y-1.5 ${
+                  isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block">
+                    {isConcluded ? 'Histórico do Registro' : 'Data/Hora da Realização do Agendamento'}
+                  </span>
+                  <div className="space-y-1 text-xs">
+                    <p className="text-[11px] text-slate-300 flex items-center justify-between">
+                      <span className="text-slate-400">{isConcluded ? 'Agendado originalmente:' : 'Registrado em:'}</span>
+                      <span className="font-medium text-white">{selectedAppointment.createdAt || '15/09/2026 às 14:32'}</span>
+                    </p>
+                    {isConcluded && selectedAppointment.paidAt && (
+                      <p className="text-[11px] text-slate-300 flex items-center justify-between">
+                        <span className="text-slate-400">Finalizado e pago em:</span>
+                        <span className="font-medium text-emerald-400">
+                          {new Date(selectedAppointment.paidAt).toLocaleDateString('pt-BR')} às {new Date(selectedAppointment.paidAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Rodapé Fixo de Ação do Modal */}
+              <div className={`p-3 border-t sticky bottom-0 z-20 flex flex-col gap-2 ${
+                isDark ? 'border-slate-800 bg-slate-950/95' : 'border-slate-200 bg-white/95'
+              } backdrop-blur-xs`}>
+                {(() => {
+                  // Caso Concluído: Ações no Passado (Fechar ou Reabrir)
+                  if (isConcluded || cat.key === 'concluidos') {
+                    return (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
+                          className="py-2 px-3 rounded-[4px] border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                          title="Reabrir este agendamento para a grade ativa"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Reabrir</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAppointment(null)}
+                          className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                          <span>Fechar Detalhes</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  // Caso 1: Troca entre clientes aguardando confirmação do estabelecimento
+                  if (selectedAppointment.swapRequest && selectedAppointment.swapRequest.isClientSwap && selectedAppointment.swapRequest.status !== 'completed') {
+                    return (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
+                          className="flex-1 py-2 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Recusar Troca</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmSwapRequest(selectedAppointment)}
+                          className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                          <span>Confirmar Troca</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  const stUpper = (selectedAppointment.status || '').toUpperCase();
+                  const isAlter = stUpper.includes('ALTER') || stUpper.includes('REMANEJ') || stUpper.includes('REAGEND');
+
+                  if (isAlter) {
+                    return (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
+                          className="flex-1 py-2 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Recusar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
+                          className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                          <span>Aceitar Alteração</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  const catKey = cat.key;
+
+                  if (catKey === 'pendentes') {
+                    return (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
+                          className="flex-1 py-2 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <X className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Recusar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
+                          className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                          <span>Confirmar</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (selectedAppointment.isBlockedSlot || selectedAppointment.status === 'BLOQUEADO') {
+                    return (
+                      <div className="flex items-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleUnblockSlot(selectedAppointment.protocolCode)}
+                          className="flex-1 py-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <Unlock className="w-3.5 h-3.5 text-white" />
+                          <span>Desbloquear Horário</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (catKey === 'confirmados') {
+                    const stUpper = (selectedAppointment.status || '').toUpperCase();
+                    const isInProgress = stUpper.includes('ATEND') || stUpper.includes('INICI');
+                    const isNextToServe = !isInProgress && nextActiveAppointment && nextActiveAppointment.protocolCode === selectedAppointment.protocolCode;
+
+                    // 1. Se já estiver em atendimento:
+                    if (isInProgress) {
+                      return (
+                        <div className="flex items-center gap-2 w-full">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAppointment(null)}
+                            className="flex-1 py-2 px-2 rounded-[4px] border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1 active:scale-98"
+                          >
+                            <span>Fechar</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              hapticSuccess();
+                              handleStatusChange(selectedAppointment.protocolCode, 'CONCLUÍDO');
+                              setSelectedAppointment(null);
+                            }}
+                            className="flex-1 py-2 px-2 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 shadow-xs"
+                          >
+                            <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                            <span>Finalizar Atendimento</span>
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // 2. Se for o próximo a ser atendido:
+                    if (isNextToServe) {
+                      return (
+                        <div className="flex flex-col gap-2 w-full">
+                          <div className="grid grid-cols-3 gap-1.5 w-full">
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'ALTERAÇÃO')}
+                              className="py-2 px-1 rounded-[4px] border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <RefreshCw className="w-3 h-3 text-amber-400" />
+                              <span>Remanejar</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
+                              className="py-2 px-1 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <X className="w-3 h-3 text-rose-400" />
+                              <span>Cancelar</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAppointment(null)}
+                              className="py-2 px-1 rounded-[4px] border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <span>Fechar</span>
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              hapticSuccess();
+                              handleStatusChange(selectedAppointment.protocolCode, 'EM ATENDIMENTO');
+                              setSelectedAppointment(null);
+                            }}
+                            className="w-full py-2.5 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 shadow-xs"
+                          >
+                            <Zap className="w-3.5 h-3.5 text-white fill-white" />
+                            <span>Iniciar Atendimento</span>
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    // 3. Demais confirmados:
+                    return (
+                      <div className="grid grid-cols-3 gap-1.5 w-full">
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'ALTERAÇÃO')}
+                          className="py-2 px-1 rounded-[4px] border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3 text-amber-400" />
+                          <span>Remanejar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CANCELADO')}
+                          className="py-2 px-1 rounded-[4px] border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10.5px] font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                        >
+                          <X className="w-3 h-3 text-rose-400" />
+                          <span>Cancelar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAppointment(null)}
+                          className="py-2 px-1 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10.5px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                        >
+                          <span>Fechar</span>
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => handleStatusChange(selectedAppointment.protocolCode, 'CONFIRMADO')}
+                      className="w-full py-2 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Reativar Agendamento</span>
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal: Novo Agendamento Manual */}
       {isNewModalOpen && (
@@ -1553,17 +2439,19 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
                     isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                   }`}
                 >
-                  <option value="Todos">Todos da Equipe</option>
-                  {(professionals && professionals.length > 0) ? (
+                  <option key="Todos" value="Todos">Todos da Equipe</option>
+                  {professionals && professionals.length > 0 ? (
                     professionals.map((p) => (
                       <option key={p.id} value={p.name}>{p.name}</option>
                     ))
                   ) : (
-                    <>
-                      <option value="Carlos Henrique">Carlos Henrique</option>
-                      <option value="Diego Souza">Diego Souza</option>
-                      <option value="Lucas Prado">Lucas Prado</option>
-                    </>
+                    [
+                      { id: 'carlos', name: 'Carlos Henrique' },
+                      { id: 'diego', name: 'Diego Souza' },
+                      { id: 'lucas', name: 'Lucas Prado' },
+                    ].map((p) => (
+                      <option key={p.id} value={p.name}>{p.name}</option>
+                    ))
                   )}
                 </select>
               </div>
@@ -1589,106 +2477,77 @@ export const ProfessionalAgendaView: React.FC<ProfessionalAgendaViewProps> = ({
         </div>
       )}
 
-      {/* MODAL: Concluir Atendimento com Seleção de Pagamento (Opção A) */}
-      {paymentSelectingAppointment && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-3.5 bg-black/80 backdrop-blur-xs animate-in fade-in"
-          onClick={() => setPaymentSelectingAppointment(null)}
-        >
-          <div 
-            className={`w-full max-w-sm rounded-[4px] overflow-hidden shadow-2xl border flex flex-col ${
-              isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
+      {/* Modal Simples e Rápido de Confirmação da Troca de Horários */}
+      {swapConfirmedModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className={`w-full max-w-sm rounded-[4px] border shadow-2xl overflow-hidden ${
+            isDark ? 'bg-slate-950 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
+            {/* Cabeçalho */}
             <div className={`p-3.5 border-b flex items-center justify-between ${
-              isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-slate-50'
+              isDark ? 'border-slate-800 bg-slate-900/60' : 'border-slate-200 bg-slate-50'
             }`}>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-[4px] bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-white">
-                  <Check className="w-4 h-4 stroke-[3]" />
+                <div className="w-7 h-7 rounded-[4px] bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 </div>
-                <h3 className="text-xs font-bold font-['Poppins']">
-                  Concluir & Receber
+                <h3 className="text-sm font-bold font-['Poppins'] text-white">
+                  Troca Confirmada!
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setPaymentSelectingAppointment(null)}
+                onClick={() => setSwapConfirmedModalData(null)}
                 className="p-1 rounded-[4px] text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-3.5 space-y-3">
-              {/* Resumo do Atendimento */}
-              <div className={`p-2.5 rounded-[4px] border ${
+            {/* Conteúdo Simples com a Nova Distribuição */}
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-slate-300 text-center">
+                Os horários foram realocados com sucesso na sua agenda:
+              </p>
+
+              <div className={`p-3 rounded-[4px] border space-y-2 ${
                 isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'
               }`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cliente</p>
-                    <p className="text-xs font-bold text-white">
-                      {paymentSelectingAppointment.customerName || paymentSelectingAppointment.clientName || 'Cliente'}
-                    </p>
-                    <p className="text-[10.5px] text-slate-400 mt-0.5">
-                      {paymentSelectingAppointment.serviceTitle || paymentSelectingAppointment.service || 'Serviço'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total a Receber</p>
-                    <p className="text-base font-black text-emerald-400">
-                      R$ {Number(paymentSelectingAppointment.totalPrice || 0).toFixed(2).replace('.', ',')}
-                    </p>
-                  </div>
+                {/* Cliente B no novo horário */}
+                <div className="flex items-center justify-between text-xs py-1 border-b border-slate-800/60">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-emerald-400" />
+                    {swapConfirmedModalData.clientB.name}
+                  </span>
+                  <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-[3px] border border-emerald-500/30">
+                    às {swapConfirmedModalData.clientB.newTime}
+                  </span>
+                </div>
+
+                {/* Cliente A no novo horário */}
+                <div className="flex items-center justify-between text-xs py-1">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-amber-400" />
+                    {swapConfirmedModalData.clientA.name}
+                  </span>
+                  <span className="font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-[3px] border border-amber-500/30">
+                    às {swapConfirmedModalData.clientA.newTime}
+                  </span>
                 </div>
               </div>
 
-              {/* Formas de Pagamento (Fundo verde = texto branco) */}
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                  Selecione a Forma de Pagamento Utilizada:
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmCompletionWithPayment('pix')}
-                    className="p-2.5 rounded-[4px] border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white group transition cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-98"
-                  >
-                    <QrCode className="w-5 h-5 text-emerald-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-emerald-300 group-hover:text-white">PIX</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmCompletionWithPayment('cartao_credito')}
-                    className="p-2.5 rounded-[4px] border border-blue-500/30 bg-blue-500/10 hover:bg-blue-600 hover:text-white group transition cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-98"
-                  >
-                    <CreditCard className="w-5 h-5 text-blue-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-blue-300 group-hover:text-white">Crédito</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmCompletionWithPayment('cartao_debito')}
-                    className="p-2.5 rounded-[4px] border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-600 hover:text-white group transition cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-98"
-                  >
-                    <Wallet className="w-5 h-5 text-cyan-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-cyan-300 group-hover:text-white">Débito</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmCompletionWithPayment('dinheiro')}
-                    className="p-2.5 rounded-[4px] border border-amber-500/30 bg-amber-500/10 hover:bg-amber-600 hover:text-white group transition cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-98"
-                  >
-                    <Banknote className="w-5 h-5 text-amber-400 group-hover:text-white" />
-                    <span className="text-xs font-bold text-amber-300 group-hover:text-white">Dinheiro</span>
-                  </button>
-                </div>
-              </div>
+              {/* Botão de Fechar Rápido (Fundo Verde = Texto Branco) */}
+              <button
+                type="button"
+                onClick={() => {
+                  hapticSuccess();
+                  setSwapConfirmedModalData(null);
+                }}
+                className="w-full py-2.5 px-3 rounded-[4px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-xs mt-2"
+              >
+                <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                <span>Entendido</span>
+              </button>
             </div>
           </div>
         </div>

@@ -19,6 +19,7 @@ import { TeamManager } from './professional/TeamManager';
 import { FinancialManagerView } from './professional/FinancialManagerView';
 import { ProfessionalLoginModal } from './professional/ProfessionalLoginModal';
 import { SalonCustomizationHub } from './professional/SalonCustomizationHub';
+import { UtilitiesAndToolsView } from './professional/UtilitiesAndToolsView';
 import { useTheme } from '../context/ThemeContext';
 import { getSalonLogo } from '../utils/salonLogos';
 import { updateDynamicPwaAssets } from '../utils/pwaAssets';
@@ -35,6 +36,8 @@ export interface SalonProfileViewProps {
   onToggleFavorite?: (salonName: string) => void;
   userName?: string;
   userAvatarUrl?: string;
+  onNavigateToUserAppointments?: () => void;
+  onNavigateToUserDashboard?: () => void;
 }
 
 // Catálogo inicial de serviços padrão
@@ -326,19 +329,35 @@ const INITIAL_APPOINTMENTS: BookingAppointment[] = [
     protocolCode: 'VG-9425',
     serviceTitle: 'Mechas & Iluminação de Fios',
     service: 'Mechas & Iluminação de Fios',
-    professionalName: 'Juliana Costa',
-    professional: 'Juliana Costa',
+    professionalName: 'Carlos Henrique',
+    professional: 'Carlos Henrique',
     salonName: 'Barbearia Rota 99',
-    clientName: 'Camila Duarte',
-    customerName: 'Camila Duarte',
-    dateTime: 'Hoje, 17:00',
+    clientName: 'Lucas Silva',
+    customerName: 'Lucas Silva',
+    dateTime: 'Hoje, 14:00',
     dayGroup: 'Hoje',
-    time: '17:00',
+    time: '14:00',
     totalPrice: 130,
     address: 'Rua das Flores, 1420 - Centro',
     status: 'ALTERADO',
     clientPhone: '(41) 99234-5678',
     customerPhone: '(41) 99234-5678',
+    swapRequest: {
+      isClientSwap: true,
+      clientA: {
+        name: 'Lucas Silva',
+        originalTime: '14:00',
+        requestedTime: '15:00',
+        phone: '(41) 99234-5678',
+      },
+      clientB: {
+        name: 'Bruno Lima',
+        originalTime: '15:00',
+        accepted: true,
+        phone: '(41) 98844-3322',
+      },
+      status: 'pending_salon_confirmation',
+    },
   },
   {
     id: 'apt-5b',
@@ -461,10 +480,16 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   onToggleFavorite,
   userName = 'Lucas Silva',
   userAvatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+  onNavigateToUserAppointments,
+  onNavigateToUserDashboard,
 }) => {
   const { isDark } = useTheme();
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState<boolean>(false);
   const [currentUserName, setCurrentUserName] = useState<string>(userName);
+
+  React.useEffect(() => {
+    setCurrentUserName(userName);
+  }, [userName]);
   const [isLoginPinModalOpen, setIsLoginPinModalOpen] = useState<boolean>(false);
   const [isManagePinModalOpen, setIsManagePinModalOpen] = useState<boolean>(false);
 
@@ -810,7 +835,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     }
   }, [userName]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades'>('home');
   const [bookingService, setBookingService] = useState<CatalogServiceItem | null>(null);
   const [skipDateStep, setSkipDateStep] = useState<boolean>(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
@@ -859,9 +884,13 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   const primaryOffer = salonOffers[0] || offers[0];
 
   // Informações consolidadas do salão conectadas ao estado dinâmico
+  const activeLogo = isDark
+    ? (adminSettings.salonLogoDark || adminSettings.salonLogo)
+    : (adminSettings.salonLogoLight || adminSettings.salonLogo);
+
   const salonInfo = useMemo(() => ({
     name: adminSettings.salonName || salonName,
-    avatar: adminSettings.salonIcon || adminSettings.salonLogo || getSalonLogo(adminSettings.salonName || salonName, primaryOffer?.salonLogo),
+    avatar: adminSettings.salonIcon || activeLogo || getSalonLogo(adminSettings.salonName || salonName, primaryOffer?.salonLogo),
     coverImage: primaryOffer?.galleryImages?.[0] || primaryOffer?.imageUrl || 'https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1200&q=80',
     rating: primaryOffer?.rating || 4.9,
     reviewsCount: primaryOffer?.reviewsCount || 84,
@@ -880,7 +909,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
       { icon: Car, label: 'Estacionamento Próprio' },
     ],
     professionals: professionalsList,
-  }), [salonName, primaryOffer, adminSettings, professionalsList]);
+  }), [salonName, primaryOffer, adminSettings, professionalsList, activeLogo]);
 
   const hasMultipleProfessionals = salonInfo.professionals.length > 1;
   const spaceTabLabel = salonInfo.isHomeCare ? 'Atendimento' : 'Espaço';
@@ -972,7 +1001,17 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   }, [primaryOffer, salonName, salonOffers, offers]);
 
   // Navegação direta: no modo público rola para a seção; no modo gerenciamento alterna a aba diretamente
-  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => {
+  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => {
+    if (tab === 'utilidades') {
+      if (currentPersona === 'cliente') {
+        setCurrentPersona('admin');
+        setIsSalonLoggedIn(true);
+        setViewMode('ger');
+      }
+      setActiveTab('utilidades');
+      return;
+    }
+
     if (tab === 'personalizar') {
       if (isGerMode && !isActiveProAdmin) {
         setActiveTab('home');
@@ -1287,9 +1326,9 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
           className="h-full max-w-[150px] sm:max-w-[190px] pl-3.5 pr-1 flex items-center shrink-0 select-none cursor-pointer overflow-hidden"
           title={salonInfo.name}
         >
-          {adminSettings.salonLogo ? (
+          {activeLogo ? (
             <img 
-              src={adminSettings.salonLogo} 
+              src={activeLogo} 
               alt={salonInfo.name}
               className="max-h-8 sm:max-h-9.5 w-auto max-w-full object-contain object-left"
             />
@@ -1356,6 +1395,30 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
             </button>
           )}
 
+          {/* Botão Direto para Minha Agenda (Sempre visível no modo cliente/público) */}
+          {currentPersona === 'cliente' && (
+            <button
+              onClick={() => {
+                hapticLight();
+                if (onNavigateToUserAppointments) {
+                  onNavigateToUserAppointments();
+                }
+              }}
+              className={`px-3 h-9 sm:h-10 rounded flex items-center gap-1.5 transition active:scale-95 cursor-pointer font-bold text-xs ${
+                isDark
+                  ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-xs'
+              }`}
+              title="Ver minha agenda de compromissos"
+            >
+              <Calendar className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline whitespace-nowrap">Agenda</span>
+              <span className="w-4.5 h-4.5 rounded-full bg-emerald-500 text-white text-[9px] font-extrabold flex items-center justify-center">
+                {appointmentsList.filter(a => !a.isBlockedSlot && a.protocolCode).length}
+              </span>
+            </button>
+          )}
+
           {/* Foto do Usuário / Abrir Perfil */}
           <button
             onClick={() => {
@@ -1387,6 +1450,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                 onUpdateSettings={handleUpdateSettings}
                 services={catalogServicesList}
                 appointments={appointmentsList}
+                onUpdateAppointments={handleUpdateAppointments}
                 professionals={professionalsList}
                 onNavigateTab={handleSelectTab}
                 onOpenNewService={() => handleSelectTab('personalizar')}
@@ -1438,6 +1502,18 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                 onUpdateAppointments={handleUpdateAppointments}
                 salonName={salonInfo.name}
                 currentPersona={currentPersona}
+              />
+            </div>
+          )}
+
+          {activeTab === 'utilidades' && (
+            <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-start animate-in fade-in duration-150">
+              <UtilitiesAndToolsView
+                appointments={appointmentsList}
+                services={catalogServicesList}
+                activeProId={activeProId}
+                isOwner={isActiveProAdmin}
+                onBack={() => handleSelectTab('home')}
               />
             </div>
           )}
@@ -2270,6 +2346,10 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
         }}
         onLoginSalon={handleSalonLogin}
         onLogoutSalon={handleSalonLogout}
+        allAppointments={appointmentsList}
+        onUpdateAppointments={setAppointmentsList}
+        onNavigateToUserAppointments={onNavigateToUserAppointments}
+        onNavigateToUserDashboard={onNavigateToUserDashboard}
       />
 
       {/* Modal de Autenticação / Login Inicial do Profissional */}

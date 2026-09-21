@@ -15,6 +15,1187 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
+### [2026-09-21] — Remoção de Badge de Duração nos Botões de Vagas Livres (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Clean / Síntese Mobile]`
+- **Motivo / Solicitação:** Exclusão do segundo `span` (badge de duração como "30m", "45m") dentro dos botões de horários livres (`button#dashboard-free-slot-* > span:nth-of-type(2)`), sintetizando o botão exclusivamente para a exibição do horário limpo (`HH:mm`).
+- **Implementações Realizadas:**
+  - Removido o elemento `span:nth-of-type(2)` contendo `slot.durationText` dos botões de encaixe rápido de vagas livres.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: Build de produção validado com sucesso.
+
+### [2026-09-21] — Correção Lógica Estrita: Bloqueio de Repasse em Atendimentos Já Iniciados
+- **Tipo:** `[Fix / Regra de Negócio / UX]`
+- **Motivo / Solicitação:** Atendimento iniciado ("EM ATENDIMENTO") não pode ser transferido para outro colega. O repasse para outro profissional aplica-se exclusivamente a atendimentos que ainda NÃO foram iniciados (próximo cliente que aguarda enquanto o procedimento atual estende-se).
+- **Implementações Realizadas:**
+  1. **Ocultação Visual do Botão:** O botão `"Transferir para Colega"` só é exibido no modal quando o atendimento não está em andamento (`!isProgress`).
+  2. **Bloqueio Lógico no Handler:** Inserida trava de proteção em `handleTransferAppointment` que aborta qualquer tentativa de repasse caso o status do agendamento contenha `"ATEND"` ou `"INICI"`.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% validado.
+  - `compile_applet`: Compilação de produção validada com sucesso.
+
+### [2026-09-21] — Fila de Atendimento: Título do Grupo, Trava Sequencial de Início e Repasse para Colega
+- **Tipo:** `[Feat / UI / Regra de Negócio]`
+- **Motivo / Solicitação:** Adicionar título para o grupo de atendimentos prioritários ("Fila de Atendimento da Cadeira"), impedir que o próximo atendimento seja iniciado sem a conclusão ou definição do anterior, e implementar solução de transferência/repasse de atendimento para outro colega do mesmo estabelecimento em caso de imprevisto ou atraso.
+- **Implementações Realizadas:**
+  1. **Título do Grupo de Atendimento:** Adicionado cabeçalho visual `Fila de Atendimento da Cadeira` com ícone `CalendarCheck`, badge `Em Andamento & Próximo` e alinhamento responsivo.
+  2. **Trava Operacional de Início:** O botão "Iniciar Atendimento" no modal do próximo atendimento fica desabilitado com o aviso `"Início Bloqueado (Cadeira Ocupada)"` enquanto o atendimento anterior ainda estiver em andamento ou ativo na cadeira.
+  3. **Aviso Explicativo de Cadeira Ocupada:** Exibido card de alerta instruindo que o profissional deve concluir o atendimento anterior ou transferir o próximo para um colega caso o procedimento atual tenha se estendido.
+  4. **Fluxo de Transferência para Colega:**
+     - Criado o botão `"Transferir para Colega"` no modal de atendimento.
+     - Ao acionar, exibe painel com a lista dos outros profissionais da equipe cadastrados no salão.
+     - Ao escolher o colega e confirmar `"Repassar"`, o agendamento é reatribuído com persistência local e confirmação visual instantânea.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Ajuste de Cor da Tipografia do Horário no Próximo Atendimento (Focus Mode)
+- **Tipo:** `[Focus Mode / Styling]`
+- **Motivo / Solicitação:** Solicitação via Focus Mode para alterar a cor do texto do horário em `button#professional-next-appointment-card > div:nth-of-type(1) > span:nth-of-type(1)` para `color: #252525`.
+- **Implementações Realizadas:**
+  - Definido `color: #252525` no `<span>` do horário do card 1 (`button#professional-next-appointment-card`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% validado.
+  - `compile_applet`: Sucesso no build de produção.
+
+### [2026-09-21] — Atualização de Estilo e Cores de Fundo nos Cards de Atendimento (Focus Mode)
+- **Tipo:** `[Focus Mode / Styling / UI Contrast]`
+- **Motivo / Solicitação:** Solicitação via Focus Mode para aplicação de propriedades CSS específicas nos cards de atendimento:
+  - `button#professional-next-appointment-card > div:nth-of-type(4) > div:nth-of-type(1)`: `background-color: #315195`
+  - `button#professional-subsequent-appointment-card > div:nth-of-type(4) > div:nth-of-type(1)`: `background-color: #315195`
+  - `button#professional-subsequent-appointment-card > div:nth-of-type(4) > div:nth-of-type(2)`: `background-color: #1c283e`
+  - `button#professional-next-appointment-card > div:nth-of-type(4) > div:nth-of-type(2)`: `background-color: #1c283e`
+  - `button#professional-next-appointment-card > div:nth-of-type(1)`: `background-color: #00ff29`
+- **Implementações Realizadas:**
+  1. **Coluna 4 (Duração e Término):**
+     - O bloco de duração estimada (`div:nth-of-type(1)`) recebeu a cor de fundo `#315195` com tipografia branca de alto contraste em ambos os cards.
+     - O bloco de horário de término (`div:nth-of-type(2)`) recebeu a cor de fundo `#1c283e` com tipografia mono branca em ambos os cards.
+  2. **Coluna 1 (Destaque do Horário no Próximo Atendimento):**
+     - O primeiro card (`professional-next-appointment-card`) agora possui cor de fundo `#00ff29` com tipografia e ícones brancos (`text-white`) em total conformidade com a regra de contraste obrigatório em fundos verdes.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% validado.
+  - `compile_applet`: Sucesso no build de produção.
+
+### [2026-09-21] — Conversão do Card de Atendimento em Botão Operacional, Duplicação de Fila e Realocação
+- **Tipo:** `[UI / UX / Interactive Modal / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("assim como no card da agenda, converter essa div em botão, ao ser acionado deve abrir um modal cujo objetivo é 'iniciar' o atendimento. Com opções de 'pausar', adicinar mais tempo... e 'Concluir' para concuir o atendimento. essa div deve ser duplicada inserida uma abaixo da outra, porem a de baixo deve mostrar o proximo atendimento apos esta. Essa div deve serlocalizada acima de proximas vagas livres").
+- **Implementações Realizadas:**
+  1. **Conversão do Card em Botão Interativo com Feedback Visual:**
+     - O card de atendimento no painel inicial do profissional agora funciona como botão de toque com feedback tátil e sonoro.
+     - Indicador dinâmico de status: quando em atendimento, exibe etiqueta pulsante "AGORA" e fundo verde vibrante (`#20C933`) com contraste rigoroso de tipografia branca (`text-white`). Quando pausado, exibe indicador de pausa.
+  2. **Modal Operacional Completo de Atendimento:**
+     - **Iniciar / Retomar Atendimento:** Inicia ou retoma o atendimento diretamente pelo modal (`Zap`), atualizando a fila e os estados de forma reativa.
+     - **Pausar Atendimento:** Alterna o estado do atendimento para "PAUSADO" (`Pause`) sem perder o progresso ou os dados do cliente.
+     - **Adicionar Mais Tempo (Estender):** Régua rápida com opções de `+5m`, `+10m`, `+15m` e `+30m` (`Plus`) para estender a duração estimada e recalcular automaticamente o novo horário de término previsto.
+     - **Concluir Atendimento:** Finaliza o atendimento (`Check`), atualizando o status para "CONCLUÍDO", persistindo no `localStorage` e refletindo nos indicadores financeiros.
+  3. **Duplicação Vertical da Fila (Card 1: Atual/Próximo | Card 2: Subsequente):**
+     - O card foi duplicado e disposto um abaixo do outro com espaçamento equilibrado (`space-y-2`).
+     - O card superior representa o atendimento atual ou o primeiro da fila; o card inferior representa o atendimento imediatamente subsequente.
+  4. **Posicionamento Acima de "Próximas Vagas Livres":**
+     - A dupla de cards de atendimento prioritário foi realocada estrategicamente para o topo, posicionando-se imediatamente acima da régua "Próximas Vagas Livres".
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `src/types.ts`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% validado com zero advertências.
+  - `compile_applet`: Compilação de produção (`npm run build`) validada com sucesso.
+
+### [2026-09-21] — Cópia da Régua de Próximas Vagas Livres na Seção Inicial (Painel / Início)
+- **Tipo:** `[UI / UX / Mobile Synthesis / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("mover uma copia dessa div para seção inicial" direcionada via Focus Mode ao seletor `div#root > ... > div:nth-of-type(4) > div:nth-of-type(1)`).
+- **Implementações Realizadas:**
+  1. **Régua de Vagas Livres na Seção Inicial (`ProfessionalDashboardView`):**
+     - Integrada uma cópia fiel da régua horizontal "Próximas Vagas Livres" no topo do conteúdo rolável da aba inicial do profissional (logo acima de "Fila & Atendimentos").
+     - Exibe ícone `Sparkles`, quantidade de vagas livres calculadas dinamicamente para o dia de hoje, e os chips com horários de início e duração livre (ex: `10:00 - 45m livres`, `14:00 - 1h livres`).
+  2. **Interação Rápida de Encaixe com a Agenda:**
+     - Ao tocar em qualquer chip de vaga livre na Seção Inicial, o app registra o horário selecionado e navega imediatamente para a visualização da agenda com o modal de novo agendamento aberto pronto para preenchimento.
+  3. **Sincronização Bidirecional com a Agenda (`ProfessionalAgendaView`):**
+     - A `ProfessionalAgendaView` agora escuta requisições de encaixe originadas na Seção Inicial, preenchendo automaticamente o horário da vaga escolhida.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Bordas dos Cards na Cor do seu Status (Focus Mode)
+- **Tipo:** `[UI / UX / Styling / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("Asbordas dos cards devem ser na cor do seu status" direcionada via Focus Mode aos cards de horário da agenda).
+- **Implementações Realizadas:**
+  1. **Bordas Dinâmicas Vinculadas ao Status:**
+     - Expandido `getStatusCategory` com classes de borda contextualizadas (`cardBorderDark` e `cardBorderLight`).
+     - **Confirmados / Em Atendimento:** Borda em tom esmeralda sólido (`border-emerald-500 hover:border-emerald-400`).
+     - **Vagas Livres:** Borda tracejada esmeralda sólida (`border-dashed border-emerald-500 hover:border-emerald-400`).
+     - **Pendentes / A Confirmar / Trocas / Travas:** Borda em tom âmbar vibrante (`border-amber-500 hover:border-amber-400`).
+     - **Concluídos:** Borda em tom azul de alta legibilidade (`border-blue-500 hover:border-blue-400`).
+     - **Cancelados:** Borda em tom rose / vermelho de alerta (`border-rose-500 hover:border-rose-400`).
+  2. **Aplicação Unificada em Grid e Lista:**
+     - Todos os cards do Grid (3 colunas) e da Lista sequencial agora exibem sua borda com a cor exata do seu status, permitindo escaneamento visual e identificação instantânea pelo profissional.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+
+### [2026-09-21] — Layout do Grid da Agenda em 3 Colunas & Ajuste Ergonômico de Elementos (Focus Mode)
+- **Tipo:** `[UI / UX / Grid Layout / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("exiba em 3 colnas, ajuste os elementos ara caber" direcionada via Focus Mode ao seletor `div#root > ... > div:nth-of-type(4) > div:nth-of-type(3)`).
+- **Implementações Realizadas:**
+  1. **Configuração em 3 Colunas (`grid-cols-3`):**
+     - O contêiner de minicards agora renderiza estritamente em 3 colunas (`grid grid-cols-3 gap-1.5 sm:gap-2`), aproveitando de forma muito mais eficiente o espaço horizontal da tela do profissional.
+  2. **Calibração Ergonômica dos Elementos Internos:**
+     - **Horário Hero:** Calibrado para `font-mono text-sm sm:text-base font-black tracking-tight leading-none`, garantindo leitura rápida e destaque máximo sem estourar a largura da coluna.
+     - **Badge de Status:** Redimensionado sutilmente com `text-[7px] sm:text-[7.5px] font-black uppercase px-1 sm:px-1.5 py-0.5 whitespace-nowrap`, mantendo contraste perfeito sem sobrepor o horário.
+     - **Nome do Cliente / Vaga Livre / Trava:** Tipografia com `text-[10px] sm:text-[11px] font-semibold truncate` e espaçamento superior ajustado (`mt-1.5`).
+     - **Padding & Altura Mínima:** Ajustados para `p-2 sm:p-2.5` e `min-h-[58px] sm:min-h-[62px]`, eliminando sobras e garantindo toque confortável no mobile.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Destaque Tipográfico do Horário de Início nos Cards da Agenda (Focus Mode)
+- **Tipo:** `[UI / UX / Typography / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("nesse card mostrar somento o horario de incio com fnte grande e destacavel. o profissional deve ver em primeiro momento sempre o horário, essa agenda se refere a consulta de horarios e portanto não deve o horário ser mais timido qe outras informações. Essa seção e cards é dicado a ele!") direcionada ao elemento de horário (`span:nth-of-type(1)`).
+- **Implementações Realizadas:**
+  1. **Exibição Estrita do Horário de Início:**
+     - Eliminada a exibição do horário de término no card; agora é exibido estritamente o horário de início (`item.startTime`, ex: `09:00`, `10:30`).
+  2. **Hierarquia e Destaque Hero do Horário:**
+     - O horário passa a ser o elemento visual dominante e de maior peso no card, com tipografia `font-mono text-base sm:text-lg font-black` e contraste alto, tornando a leitura imediata e nítida mesmo a distância no posto de trabalho.
+  3. **Consistência em Grid e Lista:**
+     - Aplicado em todos os cards (Atendimentos, Vagas Livres e Travas/Bloqueios) em ambos os modos de exibição (Grid e Lista).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Síntese dos Cards da Agenda: Exibição Estrita de Horário, Nome do Cliente e Status
+- **Tipo:** `[UI / UX / Mobile Synthesis / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("todos cards deve mosttrasomente horario, nomo do cliente e status" direcionada via Focus Mode):
+- **Implementações Realizadas:**
+  1. **Simplificação Estrita dos Cards no Modo Grid (Minicards):**
+     - O topo do card agora exibe exclusivamente o intervalo de horário (`item.startTime - item.endTime`) e o selo compacto de status (`catInfo.shortLabel`).
+     - A base do card exibe apenas o nome do cliente (`clientName`).
+     - Foram removidos o título do serviço (`serviceTitle`) e o preço (`R$`), tornando a leitura rápida e com foco total no agendamento, como em painéis clínicos e de agendamento ágil (Poupatempo).
+  2. **Harmonização do Modo Lista:**
+     - O item da lista foi reestruturado para manter o mesmo padrão ultra-sintético em linha única: horário real à esquerda, nome do cliente centralizado e badge de status à direita.
+     - Removidos preço, ícones adicionais, nome do serviço e duração da visualização prévia da lista.
+  3. **Tratamento Uniforme para Vagas Livres e Travas:**
+     - Vagas Livres exibem horário (`item.startTime - item.endTime`), status `Livre` e legenda "Vaga Disponível".
+     - Travas exibem horário (`item.startTime - item.endTime`), status `Trava` e o motivo do bloqueio.
+  4. **Limpeza Pós-Obra (Clean Code):**
+     - Remoção do import não utilizado `Scissors` de `lucide-react`.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Remoção da Legenda Cromática da Barra de Ferramentas da Agenda (Focus Mode)
+- **Tipo:** `[UI / UX / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("remover") direcionada ao seletor CSS `div#root > ... > div:nth-of-type(4) > div:nth-of-type(2) > div:nth-of-type(1)`.
+- **Implementações Realizadas:**
+  1. **Remoção da Legenda Cromática:**
+     - Eliminado o bloco horizontal de rótulos explicativos de cores (*Confirmado*, *A Confirmar*, *Vaga Livre*, *Trava*), reduzindo a carga cognitiva e eliminando redundâncias visuais em conformidade com o princípio de síntese mobile.
+  2. **Alinhamento do Alternador de Visualização (Grid / Lista):**
+     - O seletor de modo Grid / Lista agora se alinha à direita (`justify-end`) com espaçamento limpo e sem empurrões de layout.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Desativação de Pagamento pelo App, Ação "Fechar" e Fluxo "Iniciar Atendimento" (Modal & Dashboard)
+- **Tipo:** `[UX / Business Logic / State Management / Mobile Synthesis]`
+- **Motivo / Solicitação:** Atendimento integral à solicitação do usuário:
+  - "Esse modal concluir e receber não deve ter no app porque não receberemos (por momento) via app."
+  - "No lugar do botão 'Concluir' apenas 'Fechar' para fechar o modal."
+  - "Se for o próximo a ser atendido, então 'Iniciar', para informar o app que iniciou o atendimento. No app é interessante também ter essa informação na seção inicial acima da informação do próximo cliente."
+- **Implementações Realizadas:**
+  1. **Remoção Completa do Modal de Pagamento:**
+     - Eliminado o modal de seleção de forma de pagamento (`paymentSelectingAppointment`) e fluxo "Concluir e Receber", mantendo os pagamentos fora do app conforme especificado.
+     - Limpeza pós-obra de ícones e funções não utilizadas (`QrCode`, `CreditCard`, `Wallet`, `Banknote`).
+  2. **Substituição de "Concluir" por "Fechar":**
+     - Nos agendamentos confirmados em geral, o botão principal do modal agora é simplesmente "Fechar", fechando a visualização com rapidez.
+  3. **Ação "Iniciar Atendimento" para o Próximo da Fila:**
+     - Identificação inteligente do próximo cliente ativo (`nextActiveAppointment`).
+     - Para o próximo agendamento, exibe o botão destacado em verde `Iniciar Atendimento` (com ícone `Zap`), alterando o status para `EM ATENDIMENTO`.
+     - No corpo do modal, exibe o indicador pulsante "Próximo Cliente da Fila".
+  4. **Atendimento em Andamento & Informação Acima do Próximo Cliente no Dashboard:**
+     - Em `ProfessionalDashboardView`, incluído o card "Em Atendimento" diretamente acima do card do próximo cliente quando um atendimento for iniciado.
+     - O card exibe o cliente em cadeira com o selo "Em Atendimento", horário de início e botão de ação rápida "Finalizar" para concluir o serviço.
+     - No cabeçalho da fila do Dashboard, quando há próximo cliente aguardando, disponibilizado o botão de ação rápida "Iniciar".
+     - Sincronização direta de estado via `onUpdateAppointments` entre `SalonProfileView`, `ProfessionalDashboardView` e `ProfessionalAgendaView`.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção (`npm run build`) validado com sucesso.
+
+### [2026-09-21] — Reposicionamento dos Dados do Cliente para o Topo do Modal (Sem Botões de Mensagem e Ligar)
+- **Tipo:** `[UI / UX / Mobile Synthesis / Modal Layout Refinement]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("mover para o topo do modal sem os botões menagens no app e ligar" com elemento selecionado via Focus Mode):
+  - **1. Reposicionamento para o Topo**:
+    - O bloco de identificação do cliente (avatar com inicial, nome do cliente e número de telefone) foi movido para o topo do corpo do modal (`p-4 overflow-y-auto`).
+    - Agora o profissional identifica imediatamente quem é o cliente assim que abre o modal de detalhes do agendamento.
+  - **2. Remoção dos Botões de Mensagem no App e Ligar**:
+    - Conforme expressamente solicitado, os botões secundários "Mensagem no App" e "Ligar" foram removidos do bloco do cliente, eliminando poluição visual e mantendo foco total nos dados do atendimento.
+  - **3. Eliminação da Duplicidade no Rodapé**:
+    - Removido o bloco anterior de contato que ficava abaixo do histórico de agendamento.
+  - **4. Limpeza Pós-Obra (Clean Code)**:
+    - Removido import não utilizado de `MessageSquare` em `ProfessionalAgendaView.tsx`.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção com sucesso.
+
+
+### [2026-09-21] — Correção Lógica do Modal de Atendimento Concluído (Tratamento no Passado)
+- **Tipo:** `[Logic / UX / Historical State Correction]`
+- **Motivo / Solicitação:** Solicitação do usuário ("As configurações sobre esse modal 'quando o serviço foi concluído' estão fora de lógica, como término previsto e etc. As informações devem ser tratadas com base no passado"):
+  - **1. Eliminação de Campos Voltados para o Futuro no Atendimento Concluído**:
+    - Substituído o rótulo incongruente "Término Previsto" por **"Finalizado às"** com o horário real de encerramento do serviço.
+    - Substituído "Serviço Agendado" por **"Serviço Realizado"**.
+    - Substituído "Duração Estimada" por **"Tempo de Atendimento"**.
+    - Substituído "Horário do Atendimento" por **"Horário da Realização"** com carimbo "Realizado em: [Data]".
+    - Substituído "Profissional" por **"Atendido por"**.
+  - **2. Contexto de Histórico & Financeiro Concluído**:
+    - Selo de status no topo atualizado com check de conclusão (`Concluído`).
+    - Banner informativo no passado: "Atendimento Finalizado — Serviço prestado e registrado no histórico".
+    - Indicação clara de valor pago e meio de pagamento (ex: "✓ Pago via Pix/Cartão/Caixa").
+    - Histórico do registro separando data original do agendamento e carimbo de encerramento/pagamento.
+  - **3. Rodapé Fixo de Ações Adequado ao Passado**:
+    - Removidas ações incoerentes (remanejar, cancelar ou concluir novamente).
+    - Botões objetivos para histórico: **"Fechar Detalhes"** (em destaque) e opção de segurança **"Reabrir"** caso o serviço precise retornar à fila ativa.
+  - **4. Conformidade Visual e Contraste**:
+    - 100% dos ícones mantidos de `lucide-react`.
+    - Respeitada estritamente a regra do fundo verde (`text-white` sobre `bg-emerald-500`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção com sucesso.
+
+### [2026-09-21] — Padronização dos Filtros da Agenda: Todos, Confirmados, Livres, Concluídos
+- **Tipo:** `[UI / UX / Mobile Synthesis / Filter Refinement]`
+- **Motivo / Solicitação:** Solicitação expressa do usuário ("nas opções de filtros: -todos, confirmados, Livres, concluidos"):
+  - **1. Atualização e Nomenclatura das Abas de Filtro**:
+    - **Todos**: Exibe todos os itens do expediente ativo no dia selecionado (agendamentos confirmados, intervalos livres, pendências e bloqueios).
+    - **Confirmados**: Filtra especificamente os agendamentos confirmados do profissional, desconsiderando intervalos livres e bloqueios de intervalo.
+    - **Livres**: Exibe exclusivamente as vagas livres calculadas da cadeira para encaixes rápidos.
+    - **Concluídos**: Aba permanente para consulta de atendimentos já finalizados e encerrados no dia.
+  - **2. Contadores e Estados Vazios Dinâmicos**:
+    - Contagem contextual para cada um dos 4 filtros (`timelineData.totalConfirmed`, `timelineData.totalFreeSlots`, `timelineData.totalCompleted`, etc.).
+    - Mensagens dedicadas e informativas para quando um filtro não contiver itens.
+  - **3. Conformidade Visual e Contraste**:
+    - Abas ativas com fundo esmeralda e texto obrigatório branco (`bg-emerald-500 text-white`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção (`npm run build`) concluído com sucesso.
+
+### [2026-09-21] — Grid de Horas em Minicards (Estilo Poupatempo/Clínicas) & Eliminação de Redundâncias
+- **Tipo:** `[UI / UX / Mobile Synthesis / Grid & List View / Clean Architecture]`
+- **Motivo / Solicitação:** Atendimento integral à solicitação do usuário ("ate gostei da proposta da lista, mas seria interessante mostrar os minicards de horarios, como agendamento do poupatempo, de clinicas sem extensos detalhes, essa é uma das principais propostas e não abrii mão disso! Termino as 10:10 na ultima linha é redundante e ocupa espaço se no proprio card ja mostra acima das xx:xx - xx:xx. Cadeira livre 10:25 é desnecessário quando ja vai fazer parte da lista. Se o serviço ja foi concluído, não é necessario mostrar de cara, ja que preciso fazer consulta sobre agora ou o futuro! tudo esta bem elaborado, mas poderia ter a opção de grid de horas, os cardzinhos lado a lado em colunas e linhas"):
+  - **1. Grid de Horas em Minicards (Modo Padrão - Estilo Poupatempo / Clínicas Médicas)**:
+    - Implementada a visualização em grade responsiva (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2`) com minicards ultra-sintéticos.
+    - **Minicard de Atendimento**: Horário exato com início e término (`09:00 - 09:40`), badge de status compacto, nome do cliente resumido, serviço e valor em destaque.
+    - **Minicard de Vaga Livre**: Horário de início mono (`09:40`), duração vaga (`1h05m`), status "Livre" e ação direta "+ Encaixe".
+    - **Minicard de Bloqueio**: Horário, ícone de cadeado e motivo do intervalo.
+  - **2. Seletor de Modo de Exibição (Grid vs Lista)**:
+    - Alternador limpo com ícones `LayoutGrid` e `List` ao lado da legenda cromática, permitindo que o profissional alterne instantaneamente entre o Grid compacto e a Lista sequencial.
+  - **3. Eliminação Total de Linhas Redundantes**:
+    - Removidas as linhas repetitivas de "Término às xx:xx" e "Cadeira livre xx:xx" dos cards, despoluindo a tela e economizando precioso espaço vertical no celular.
+  - **4. Ocultação Automática de Serviços Concluídos na Visão Ativa**:
+    - Atendimentos com status `CONCLUIDO` ou `FINALIZADO` não ocupam nem poluem mais a grade ativa de "agora ou o futuro".
+    - Adicionado filtro opcional "Concluídos" nas abas superiores para consulta histórica quando houver atendimentos finalizados no dia selecionado.
+  - **5. Conformidade Estrita com Mandamentos e Diretrizes**:
+    - 100% dos ícones importados exclusivamente de `lucide-react`.
+    - Cumprimento rigoroso da regra de contraste do fundo verde (`text-white` sobre fundos verdes).
+    - Código limpo, sem variáveis não utilizadas ou blocos zumbis.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-21] — Linha do Tempo Inteligente com Cálculo de Vagas Livres e Intervalo de Higienização (+15min)
+- **Tipo:** `[Refactor / Architecture / UI / Business Logic / Smart Schedule]`
+- **Motivo / Solicitação:** Atendimento direto à solicitação e mitigação técnica com o usuário ("então o correto é exibir somente o proximo hrário vago sem mostrar os horarios em que um cliente ja esta ocuando o qe acha? Mesmo que tenhamos que repensar a distribuição e numeros de colunas? qual seria sua restruturação e alteração dessas ideia, o repensamento?"):
+  - **1. Abandono de Grade Estática & Adoção de Linha do Tempo Dinâmica**:
+    - Substituição da grade repetitiva de horários fixos (que gerava cards redundantes para serviços longos de 1h30) por uma visualização sequencial real de atendimentos.
+    - Cada agendamento agora é renderizado como um card único exibindo o início, o término e a duração real calculada (`item.startTime - item.endTime`).
+  - **2. Margem de Checkout & Higienização (+15 min)**:
+    - Implementada a constante `CHECKOUT_BUFFER_MINUTES = 15`.
+    - Ao concluir um serviço, o sistema adiciona automaticamente 15 minutos para checkout, pagamento, despedida e assepsia antes de considerar a cadeira livre (`chairFreeMinutes = endMinutes + 15`).
+  - **3. Detecção e Apresentação de Vagas Livres Reais (`FREE_SLOT`)**:
+    - O sistema calcula os intervalos vazios entre o início da jornada (08:00), os atendimentos e o encerramento (20:00).
+    - Intervalos livres são destacados com design tracejado, badge de duração disponível (ex: `1h05m livres`) e botão de ação direta `+ Encaixar` com feedback tátil.
+  - **4. Régua Superior de Acesso Rápido "Próximas Vagas Livres"**:
+    - Régua compacta no topo da agenda com chips de horários vagos imediatos, permitindo que o profissional visualize com um olhar rápido quando a cadeira está disponível para novos encaixes.
+  - **5. Limpeza de Código & Padrões Rígidos**:
+    - Removidos estados obsoletos (`viewDensity`) e ícones não utilizados (`LayoutGrid`, `List`), mantendo conformidade com o Mandamento 5 (Clean Code).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem TypeScript.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-21] — Bloqueio de Seleção e Estilização de Dias Anteriores à Data Atual no Calendário Mensal
+- **Tipo:** `[UI / UX / Business Logic / Focus Mode / Date Constraints]`
+- **Motivo / Solicitação:** Atendimento direto à solicitação do usuário via Focus Mode para desabilitar a seleção de dias anteriores à data atual no calendário ("os dias anteriores a data atual não deve ser selecionado, pois ja passou"):
+  - **1. Trava Lógica de Seleção (`isBeforeToday`)**: Implementado helper de normalização temporal por meia-noite (`00:00:00`), bloqueando a seleção e o disparo de eventos de toque/clique para datas passadas.
+  - **2. Estilização Desabilitada e Semântica**:
+    - Dias passados recebem estado desabilitado (`disabled={isPast}`), opacidade reduzida (`opacity-25` no tema escuro, `opacity-30` no claro), cursor de proibição (`cursor-not-allowed`) e supressão de efeitos de foco/hover.
+    - Ocultados indicadores visuais de agendamentos futuros em datas pretéritas.
+  - **3. Prevenção de Navegação para Meses Passados**:
+    - A seta de navegação anterior (`ChevronLeft`) do mês atual agora é automaticamente desabilitada com estilo esmaecido e `cursor-not-allowed`, impedindo navegar para meses que já transcorreram por completo.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem TypeScript.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-21] — Botão Estilizado com Ícone e Legenda "Expandir Dias" no Calendário Mensal
+- **Tipo:** `[UI / Refactor / Focus Mode / Mobile Ergonomics]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via Focus Mode para converter o controle de recolhimento do calendário mensal em um botão elegante com design do sistema e legenda "Expandir Dias":
+  - **1. Design Refinado do Botão**: Substituído o texto simples por um botão com acabamento de borda, cantos `rounded-[4px]`, sombra suave `shadow-xs`, ícone `<Calendar className="w-3 h-3 text-emerald-400" />` de `lucide-react` e chevron com transição rotacional fluida.
+  - **2. Legenda e Estado "Expandir Dias"**: Quando recolhido (estado padrão inicial para maximizar o espaço dos cards de horários na tela do celular), o botão destaca-se em tom esmeralda sutil (`bg-emerald-500/15 border-emerald-500/40 text-emerald-400`) com a legenda **"Expandir Dias"**. Ao ser expandido, a legenda atualiza dinamicamente para "Recolher Dias".
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem TypeScript.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-21] — Grade Compacta de Horários (Time Chips de Alta Densidade) & Destaque Cromático Semântico
+- **Tipo:** `[UI / UX / Mobile Space Optimization / Chromatic Status Highlighting / Focus Mode]`
+- **Motivo / Solicitação:** Atendimento à solicitação de teste de um grid simples de apenas cards com as horas (ex: `16:00`), visando máximo aproveitamento do espaço de tela do dispositivo móvel e um sistema genial de destaque visual para status de ocupação:
+  - **1. Grade Compacta de 4 a 8 Colunas (Time Chips)**: Cards ultracompactos com foco na hora em tipografia mono negrito, permitindo visualizar praticamente todo o expediente do dia em um relance de tela, eliminando a rolagem vertical excessiva.
+  - **2. A Solução Genial de Destaque Cromático Semântico (Alto Contraste Inegociável)**:
+    - 🟢 **Confirmado / Ocupado**: Fundo verde esmeralda sólido (`bg-emerald-600 border-emerald-500`) com **texto e hora 100% brancos** (`text-white font-black`) e primeiro nome do cliente no subtítulo, respeitando rigorosamente a regra inegociável do sistema: *Fundo Verde = Texto Branco*.
+    - 🟡 **Pendente / A Confirmar / Troca**: Fundo âmbar vibrante (`bg-amber-500 border-amber-400`) com tipografia escura (`text-slate-950 font-black`) e rótulo de alerta imediato ("A Confirmar" ou "Troca").
+    - ⚪ **Livre / Vago**: Fundo neutro com borda tracejada (`border-dashed border-slate-700`), hora em cinza claro e atalho direto `+ Livre` em verde para encaixe instantâneo.
+    - 🔒 **Trava / Bloqueado**: Fundo escuro com borda âmbar sutil e ícone `Lock`.
+  - **3. Legenda Cromática Rápida**: Barra de referência visual no topo com as 4 categorias de cores para consulta imediata do profissional.
+  - **4. Alternador de Densidade (Horas vs Detalhes)**: Seletor intuitivo permitindo alternar instantaneamente entre a visualização compacta de chips de horas e os cards detalhados com serviço e valor.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem TypeScript.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-21] — Nova Interface da Agenda Profissional: Calendário Mensal Fixo & Grade de Horários com Detalhes Completos
+- **Tipo:** `[UI / UX / Architecture / Slot Grid / Time Blocking / Mobile Synthesis]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário para reestruturar a seção "Agenda de Atendimentos" do profissional:
+  - **1. Calendário Mensal Fixo no Topo**: Calendário do mês com visualização dos 7 dias da semana, navegação de mês anterior/seguinte, destaque para o dia atual ("Hoje") e dia selecionado (Emerald com alto contraste), indicadores visuais sutis (dots) em dias com agendamentos, e opção de recolher/expandir para otimizar espaço de tela em celulares.
+  - **2. Grade Visual de Horários do Dia (Time-Blocking Grid)**: A lista linear anterior foi totalmente substituída por um grid responsivo de horários (08:00 às 20:00 mais horários marcados). Cada card exibe de forma concisa e limpa: horário de início, selo de status categorizado, serviço, nome do cliente, horário previsto de término e valor. Horários vagos contam com indicação clara e atalho direto de encaixe (+ Agendar).
+  - **3. Filtros Rápidos de Grade**: Chips de alternância rápida entre "Todos", "Ocupados" e "Livres" para navegação ágil.
+  - **4. Modal Completo de Descrição do Agendamento**: Ao tocar em qualquer horário ocupado ou bloqueado, o modal detalhado é acionado com dados completos: cliente, telefone, serviço, início, duração estimada, horário previsto de término calculado dinamicamente, valor e ações de gestão/atendimento (mensagem no app, chamada, confirmação/recusa ou desbloqueio).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem TypeScript.
+  - `compile_applet`: Build de produção executado com sucesso total.
+
+### [2026-09-21] — Remoção da Pílula de Data Redundante no Cabeçalho da Agenda Profissional
+- **Tipo:** `[UI / Refactor / Mobile Synthesis / Focus Mode]`
+- **Motivo / Solicitação:** Atendimento direto à solicitação via seleção pontual (Focus Mode) para remover a pílula/badge de data (`[Hoje]` / `[dd/mm]`) localizada no título do cabeçalho da visualização "Agenda de Atendimentos" (`ProfessionalAgendaView.tsx`), simplificando a interface e eliminando a duplicidade com o botão de seleção de data no topo direito.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção concluído com sucesso.
+
+
+### [2026-09-21] — Painel de Dados Pessoais ("UserDashboard") com Foto, Upload e Estatísticas Reativas
+- **Tipo:** `[Feature / UI & UX / Profile Customization / Local Persistence / Drag-and-Drop / Mobile Synthesis]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário de criar um componente 'UserDashboard' que permite ao cliente editar seu nome e foto, integrando-o ao menu principal para que ele possa acessar seus dados pessoais de forma sofisticada e simplificada:
+  - **Novo Componente `UserDashboard.tsx`**: Criado um centro completo e interativo de gerenciamento de perfil, projetado especificamente para visualizações móveis. Inclui alteração rápida de nome, e-mail e telefone com máscara brasileira.
+  - **Upload Dinâmico com Drag-and-Drop (Aderência de UX)**: Área interativa para alteração de avatar, compatível com arrastar-e-soltar de arquivos e clique para seleção manual, gerando conversões de arquivo locais (Base64) salvas dinamicamente no `localStorage`.
+  - **Presets de Avatares Premium**: Carrossel flutuante de fotos de perfil com fotos de alta definição para seleção rápida de avatar.
+  - **Indicadores de Desempenho e Estatísticas**: Adicionado micro-painel no dashboard exibindo métricas consolidadas em tempo real (número de agendamentos ativos e concluídos calculados com base no `localStorage`).
+  - **Integração no Menu Principal (`ProfileDrawer.tsx` / `SalonProfileView.tsx`)**: Mapeado o botão "Meus Dados Pessoais" para fechar suavemente o menu e redirecionar o usuário para o painel de perfil com sincronização reativa de estados globais no `App.tsx`.
+- **Arquivos Impactados:**
+  - `src/components/UserDashboard.tsx`
+  - `src/components/ProfileDrawer.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `src/App.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet` e `compile_applet` executados e validados com 100% de sucesso.
+
+### [2026-09-21] — Animações de Staggered Entry (Entrada Sequencial) nos Cartões da Agenda
+- **Tipo:** `[UI & UX / Framer Motion / Motion Design / Micro-interactions]`
+- **Motivo / Solicitação:** Adição de animações de entrada sequencial ("staggered entry") aos cartões de agendamento na seção "Minha Agenda" utilizando Framer Motion (`motion/react`) para carregar a lista de forma suave e elegante:
+  - **Orquestração de Variantes**: Definidos `containerVariants` e `itemVariants` para coordenar a entrada dos filhos de forma encadeada (`staggerChildren: 0.08`, `delayChildren: 0.1`).
+  - **Efeito Mola (Spring Physics)**: Substituídos os atrasos rígidos por uma transição baseada em física de molas (`type: "spring"`, `stiffness: 260`, `damping: 22`), proporcionando uma sensação tátil premium e fluida, ideal para telas de smartphones.
+- **Arquivos Impactados:**
+  - `src/components/UserAppointmentsView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - Compilação (`compile_applet`) e linter (`lint_applet`) executados com sucesso total.
+
+### [2026-09-21] — Botão "Adicionar ao Calendário" e Sistema de Notificações Locais de Status
+- **Tipo:** `[Feature / Calendar Integration / Notifications Engine / UI & UX / Mobile Synthesis]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário de integrar a capacidade de adicionar compromissos confirmados ao calendário digital (.ics ou Google Agenda) e alertar o usuário por notificações locais/nativas quando houver alteração no status de um agendamento:
+  - **Botão "Adicionar ao Calendário"**: Integrado em cada cartão de agendamento confirmado na seção "Minha Agenda" (`UserAppointmentsView.tsx`) um botão estilizado sob as regras estritas do Vagou, abrindo um menu suspenso em flat design que permite adicionar o evento ao **Google Agenda** em tempo real ou fazer download de um arquivo padronizado **.ics** para calendários nativos (iOS, Android, Outlook).
+  - **Sistema de Notificações de Status em Tempo Real (`App.tsx`)**: Implementado motor inteligente de monitoramento que rastreia transições de status nos agendamentos (ex: PENDENTE para CONFIRMADO, CONFIRMADO para CANCELADO). O sistema ativa um Toast animado integrado de altíssima fidelidade e dispara notificações nativas via `Browser Notifications API` (solicitando permissão suavemente no início da sessão) e feedbacks hápticos (vibração) em celulares compatíveis.
+  - **Polling Sincronizado**: Adicionado polling otimizado de 2 segundos que sincroniza o `localStorage` com o estado do `App.tsx` de forma reativa, permitindo que alterações feitas na área profissional se reflitam instantaneamente como notificações para o cliente.
+- **Arquivos Impactados:**
+  - `src/App.tsx`
+  - `src/components/UserAppointmentsView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - Compilação realizada com sucesso (`compile_applet`) e checagem de sintaxe limpa (`lint_applet`).
+  - Cumprimento de todas as diretrizes de design, tipografia e contraste estrito.
+
+### [2026-09-21] — Integração Completa da Seção "Minha Agenda" no App do Cliente e Rotas de Navegação
+- **Tipo:** `[Feature / Navigation & Routing / Client Dashboard / UI & UX / Mobile Synthesis]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário para habilitar a visualização e acompanhamento dos agendamentos confirmados e propostas de permuta pendentes de forma clara e visível para o cliente:
+  - **Integração no Fluxo Principal (`App.tsx`)**: Implementado controle de estado de roteamento local (`viewMode: 'salon' | 'agenda'`) e carregamento de dados sincronizados em tempo real a partir do `localStorage` sob a chave `"vagou_user_appointments"`.
+  - **Acesso Direto no Cabeçalho Superior (`Header`)**: Inserido botão dinâmico **"Agenda"** com ícone `Calendar` de `lucide-react` e contador dinâmico de agendamentos futuros e pendentes, ativo em tempo integral no cabeçalho superior do estabelecimento para navegação com um toque.
+  - **Acesso no Drawer do Perfil do Cliente (`ProfileDrawer`)**: Incluída nova opção **"Minha Agenda"** no menu do avatar do usuário. Ao clicar nela, o drawer fecha-se elegantemente e direciona o cliente à sua visão de compromissos.
+  - **Diferenciação Visual e Sistema de Status**: Utilizado o componente dedicado `UserAppointmentsView` para expor cartões simétricos com o selo de status ("Confirmado", "Pendente", "Concluído", "Cancelado") em alto contraste, adequando as cores ao tema do Vagou e respeitando a regra inegociável de texto branco sobre qualquer fundo verde sólido.
+- **Arquivos Impactados:**
+  - `src/App.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `src/components/ProfileDrawer.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Correção do Erro Runtime TypeError: Cannot read properties of null (reading 'isOpen')
+- **Tipo:** `[Bugfix / Clean Code / Null Safety]`
+- **Motivo / Causa Raiz:** O estado `governanceWarning` era inicializado como `null` e avaliado diretamente na renderização JSX como `{governanceWarning.isOpen && (...)}`, disparando exceção runtime `Uncaught TypeError: Cannot read properties of null (reading 'isOpen')` quando fechado.
+- **Solução:** Aplicada navegação segura com optional chaining `{governanceWarning?.isOpen && (...)}` em `ProfileDrawer.tsx`.
+- **Arquivos Impactados:**
+  - `src/components/ProfileDrawer.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Travas de Segurança da Permuta: Antecedência Mínima (≥ 1h) e Compatibilidade de Duração
+- **Tipo:** `[Feature / Security Rules / Permuta / UI & UX / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Implementação das duas regras fundamentais do sistema de Permuta de Horários:
+  - **Antecedência Mínima de 1 Hora (Janela de Deslocamento)**: Solicitações para horários a menos de 60 minutos da execução ou horário atual são automaticamente bloqueadas com o selo `Margem < 1h`, garantindo tempo hábil de preparo e deslocamento ao salão.
+  - **Compatibilidade Estrita de Duração ($\text{Duração}(Target) \le \text{Duração}(Requester)$)**: O serviço do convidado proposto (B) não pode exceder o tempo do serviço do solicitante (A). Opções com duração maior são desativadas com a tag explicativa `Duração Incompatível (Xmin > Ymin)`, protegendo a agenda do salão contra atrasos em cadeia e sobreposições.
+  - **Destaque Visual & Transparência**: Modal de seleção enriquecido com banners explicativos das travas ativas e botões de horário exibindo serviço, duração e motivo específico de bloqueio (se houver).
+  - **Atualização na Governança**: Inclusão dos detalhamentos das duas travas de permuta no card educativo da aba de Configurações.
+- **Arquivos Impactados:**
+  - `src/components/ProfileDrawer.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Fila em Cascata Automática de Trocas (A → B → C → D), Governança, Reciprocidade e Anti-Vácuo
+- **Tipo:** `[Feature / Cascading Swap Queue / Governance & Fair Play / UI & UX / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito e completo às especificações acordadas:
+  - **Fila em Cascata Automática (A → B → C → D)**: O Cliente A seleciona até 3 horários futuros em ordem prioritária de preferência (1º Alvo B, 2º Alvo C, 3º Alvo D). O sistema propõe a troca estritamente a um cliente por vez, aguardando resposta por até 20 minutos. Se o alvo recusar ou não responder (timeout), a proposta é migrada automaticamente para o próximo alvo da fila sem intervenção manual.
+  - **Regra de Reciprocidade (Opt-in Obrigatório)**: O cliente só pode propor trocas se tiver a chave `"Rede Solidária de Trocas"` ativada em suas preferências de perfil (disposto a ajudar o próximo). Caso desativada, um modal educativo explica a regra e permite a ativação em 1 toque.
+  - **Diferenciação de Recusa Ativa vs. Timeout (Vácuo)**:
+    - *Recusa Ativa:* Clicar no botão `"Recusar Troca"` incrementa o contador de recusas ativas (com teto máximo de 5 recusas antes do banimento temporário para novas solicitações).
+    - *Timeout (Vácuo de 20 min):* Se o tempo expirar sem resposta, não pontua recusa punitiva (protege quem estava em reunião, dirigindo ou ocupado).
+    - *Anti-Vácuo (3 Vácuos Seguidos):* Caso o cliente deixe 3 propostas seguidas expirarem sem qualquer interação, a chave de opt-in é automaticamente desativada por inatividade.
+  - **Cota Mensal**: Limite estrito de até 2 solicitações de troca por mês por cliente para manter a estabilidade da agenda.
+  - **Painel de Governança na Aba Configurações**: Indicadores flat exibindo Cota Mensal (usadas/2), Recusas Ativas (0/5) e Vácuos Consecutivos (0/3).
+  - **Simulação Rápida para Testes**: Botões de teste no card da cascata permitindo simular avanço por recusa ou avanço por timeout/vácuo de 20 min.
+  - **Padrões Visuais & Contraste**: 100% aderente ao dark theme do Vagou, regra do fundo verde (`text-white` obrigatório), ícones exclusivos `lucide-react` e rodapé fixo de ação.
+- **Arquivos Impactados:**
+  - `src/types.ts`
+  - `src/components/ProfileDrawer.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Fluxo de Troca pelo Lado do Cliente, Mensagem de Incentivo e Mirar em C (Disparo Unitário)
+- **Tipo:** `[Feature / Client-Side Swap Flow / UI & UX / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário:
+  - **Fluxo do Lado do Cliente Solicitante (A)**: Disponibilização do botão `"Solicitar Troca de Horário"` no card do agendamento confirmado, abrindo o modal de proposta.
+  - **Disparo Unitário (Sem Confusão / Evita Disparo em Massa)**: O cliente seleciona **apenas 1 horário alvo** por vez (ex: B). O sistema não dispara para múltiplos clientes simultaneamente, prevenindo duplicidade de aceites concorrentes.
+  - **Caixa de Mensagem com Linhas Suficientes (Textarea de Apelo/Incentivo)**: Área de texto ampla para o solicitante explicar seu imprevisto com empatia (*"Amiga(o)! Por favor, me dê essa ajuda, preciso realizar o serviço hoje, mas tive um imprevisto com a escola da minha filha..."*).
+  - **Fluxo do Lado do Cliente Proposto (B)**: Banner de `"Troca Recebida"` no topo de "Minha Agenda" exibindo o comparativo claro dos horários, a mensagem do solicitante em balão de destaque, botão de aceitar (`bg-[#20C933] text-white`) e botão de recusar.
+  - **Lógica de Recusa & Mirar em C**: Caso o Cliente B recuse a proposta, o slot de B é registrado em `rejectedSlots`, o horário de B continua 100% intacto, e o Cliente A recebe o aviso claro com o botão de ação imediata `"Mirar em Outro Horário"`, podendo propor a troca exclusivamente para o Cliente C (com o horário de B marcado como recusado).
+  - **Integração com a Agenda do Salão**: Quando B aceita a proposta, o status avança para aprovação final do estabelecimento na aba `"Trocas a Confirmar"`.
+  - **Padrões de Design & Contraste**: Estrito respeito à regra do fundo verde (`text-white` em qualquer fundo verde), ícones exclusivos `lucide-react`, layout sem "box dentro de box", e rodapé fixo de ação.
+- **Arquivos Impactados:**
+  - `src/types.ts`
+  - `src/components/ProfileDrawer.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Criação da Categoria Separada "Trocas a Confirmar" na Agenda do Profissional
+- **Tipo:** `[Feature / UI & UX / Agenda Differentiation / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário (*"porem assim como tem agendamento a confirmar deve ter tambem Troca a confrmar para o profissional saber o que é agendamento comum ou troca"*):
+  - **Separação Clara de Categorias**: Criação da 4ª categoria dedicada **"Trocas"** (`trocas`) nos indicadores de status da Agenda, separando de forma nítida os agendamentos pendentes comuns (**"A Confirmar"**) das solicitações de troca de horário entre clientes (**"Trocas a Confirmar"**).
+  - **Grid de 4 Colunas**: Atualizado o painel de status superior da Agenda para dispor 4 cards de acesso rápido: **Confirmado**, **Trocas**, **A Confirmar** e **Cancelados**.
+  - **Badge e Identificação Visual**: Itens com proposta de troca agora exibem o selo `Troca` com destaque visual e cabeçalho `"Trocas a Confirmar"`, facilitando a tomada de decisão do profissional.
+  - **Fundo Verde & Contraste**: Respeitada a regra inegociável de texto e ícones brancos (`text-white`) sobre fundo verde e ícones exclusivos `lucide-react`.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Modal de Troca de Horário Entre Clientes & Confirmação pelo Estabelecimento
+- **Tipo:** `[Feature / UI & UX / Client Swap Flow / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário para a categoria "A Confirmar":
+  - **Identificação e Apresentação no Modal**: Quando a solicitação se tratar de uma proposta de troca de horário entre clientes ("A" para "B"), o modal de detalhes exibe os dois clientes envolvidos, com seus respectivos horários originais e propostos (ex: Cliente A 14:00 -> Cliente B 15:00) e o ícone de aceito (`CheckCircle2`) indicando que o Cliente B já concordou em ajudar o Cliente A.
+  - **Ação do Estabelecimento / Profissional**: Inserido o botão de ação fixo **"Confirmar Troca"** (e opção de recusar) para homologação por parte do salão/profissional.
+  - **Modal de Confirmação Rápida**: Ao clicar em confirmar, o agendamento é consolidado e um modal compacto e direto é apresentado informando a nova distribuição dos horários com sucesso (ex: "Cliente B às 14:00" e "Cliente A às 15:00").
+  - **Regra do Fundo Verde**: Garantido 100% texto e ícones brancos (`text-white`) em todos os botões e destaques verdes sólidos (`bg-emerald-500`), com ícones exclusivos da `lucide-react`.
+- **Arquivos Impactados:**
+  - `src/types.ts`
+  - `src/components/SalonProfileView.tsx`
+  - `src/components/professional/ProfessionalAgendaView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Correção de Chaves Únicas (`key` prop) no Seletor de Profissionais
+- **Tipo:** `[Bug Fix / React Quality / Clean Code]`
+- **Motivo / Solicitação:** Resolução do erro de runtime do React informado no painel (*"Each child in a list should have a unique 'key' prop. Check the render method of select"*):
+  - **Correção no `<select>` de Bloqueio**: Substituído o uso de `<>` (Fragment) dentro do `<select>` por mapeamento de array estruturado com `key` prop única em cada elemento `<option>`, além de definir `key="Todos"` na opção inicial.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Renomeação da Categoria "Pendentes" para "A Confirmar" na Agenda
+- **Tipo:** `[UI Refinement / Mobile UX Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário:
+  - **Renomeação do Indicador**: O botão/card de status antes denominado "Pendentes" foi renomeado para **"A Confirmar"** na primeira linha da Agenda.
+  - **Cabeçalho Dedicado**: O título da seção filtrada agora exibe **"Agendamentos a Confirmar"** ao selecionar essa categoria (englobando agendamentos pendentes de confirmação do profissional e solicitações de remanejamento/troca de horário entre horários/clientes).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Remoção do Botão "Hoje" e Filtragem Direta por Status nos Cards
+- **Tipo:** `[Focus Mode / UI Refinement / Category Filter / Mobile UX Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via Focus Mode:
+  - **Remoção do Card "Hoje"**: Eliminado o card de filtro "Hoje" da primeira linha da Agenda.
+  - **Grid de 3 Colunas (`grid-cols-3`)**: O contêiner `#professional-status-indicators-container` agora abriga os 3 cards principais: **Confirmado**, **Pendentes** e **Cancelados**.
+  - **Filtragem Direta e Lista Dedicada**: Ao tocar em qualquer um dos 3 cards, a lista abaixo renderiza estritamente os atendimentos correspondentes àquele status selecionado, acompanhada por um cabeçalho compacto com o total de itens e indicação visual com anel de foco (`ring-2 ring-emerald-400`).
+  - **Clean Code**: Limpeza de estados e funções de colapso de acordeão não mais utilizadas.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalAgendaView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Migração dos Indicadores de Status para a Primeira Linha da Agenda
+- **Tipo:** `[Focus Mode / UI Architecture & Flow / Mobile UX Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à ideia e solicitação do usuário via Focus Mode:
+  - **Remoção da Seção Inicial (Dashboard)**: O bloco de indicadores (`#professional-status-indicators-container`: Hoje, Confirmado, Pendentes, Cancelados) foi removido do início do Dashboard ("Fila & Atendimentos"), deixando o card do próximo atendimento limpo diretamente abaixo do cabeçalho.
+  - **Inserção na 1ª Linha da Seção Agenda**: Os 4 indicadores de status agora formam a primeira linha (`grid-cols-4`) logo abaixo do cabeçalho da **Agenda**, servindo como contadores dinâmicos e filtros de categoria interativos com feedback tátil e realce da categoria selecionada.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `src/components/professional/ProfessionalAgendaView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Ajuste de Dimensões do Card, Redução de Colunas em 20% e Horários Estimados (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Proportions / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via Focus Mode:
+  - **Altura do Card (`#professional-next-appointment-card`)**: Ajustada para `height: 65px` (`CSS 1`).
+  - **Redução Horizontal das Colunas 1 e 2 em 20%**: Grid reconfigurado para `grid-cols-[0.8fr_0.8fr_1.2fr_1.2fr]`, reduzindo horizontalmente a coluna de horário (coluna 1) e a coluna de dados do cliente (coluna 2) em 20%, transferindo mais espaço para a descrição do serviço e horários.
+  - **Substituição dos Botões de Ação na Coluna 4**:
+    - **No lugar do botão Iniciar (linha superior)**: Exibição do tempo estimado de duração do serviço no formato puro `HH:MM` (ex: `00:45`).
+    - **No lugar do botão Concluir (linha inferior)**: Exibição do horário previsto de término do serviço no formato puro `HH:MM` (ex: `10:45`) com fundo `#007b1d` e tipografia branca em alto contraste.
+  - **Clean Code**: Remoção de imports não utilizados (`Play`, `Check`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Conversão do Avatar para Ícone de Perfil Quadrado Ocupando 95% do Container
+- **Tipo:** `[Focus Mode / UI Icon Standard / Layout Geometry / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via Focus Mode:
+  - O avatar foi configurado como um contêiner quadrado (`aspect-square w-[95%] h-[95%] rounded-md`) ocupando 95% do contêiner superior.
+  - Renderiza o ícone de perfil institucional do app (símbolo de cabeça e ombro em traço linear — `User` de `lucide-react`, com stroke refinado), perfeitamente centralizado.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Proporção da Div do Avatar 80% Maior que a Div do Nome (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Proportion Adjustment / Layout Geometry / Clean Code]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário via Focus Mode: a div do avatar do cliente foi redimensionada para ocupar uma proporção dominante de ~78-80% da altura da coluna, enquanto a div do nome ocupa a porção inferior compacta (~22%):
+  - **Div do Avatar (`CSS selector 2`)**: `h-[78%]` com foto quadrada ampliada (`w-10 h-10 rounded-md`) centralizada.
+  - **Div do Nome (`CSS selector 1`)**: `h-[22%]` com primeiro nome compacto e centralizado.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Estrutura da Coluna do Cliente Idêntica à dos Botões (Foto Quadrada Sobre Nome)
+- **Tipo:** `[Focus Mode / UI Symmetry / Layout Alignment / Clean Code]`
+- **Motivo / Solicitação:** Ajuste estrito conforme solicitação: a coluna 2 (cliente) agora segue a mesma estrutura da coluna 4 (botões), ocupando 100% da altura e largura (`p-0 h-full w-full`):
+  - **Metade Superior**: Compartimento com a foto com moldura quadrada (`rounded-md`), dividida por uma borda horizontal inferior (`border-b`).
+  - **Metade Inferior**: Compartimento centralizado com o primeiro nome do cliente.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Reposicionamento dos Indicadores de Status para a Linha Superior (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Layout Hierarchy / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação via Focus Mode ("Mova para linha de cima"):
+  - Os 4 indicadores de status (`#professional-status-indicators-container`: Hoje, Confirmado, Pendentes, Cancelados) foram movidos para a linha superior, ficando logo abaixo do cabeçalho da seção e imediatamente acima do card de próximo atendimento (`#professional-next-appointment-card`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Aplicação de Estilos do Focus Mode no Card de Próximo Atendimento
+- **Tipo:** `[Focus Mode / UI Custom Styling / Clean Code]`
+- **Motivo / Solicitação:** Aplicação estrita das propriedades CSS fornecidas via Focus Mode nos elementos selecionados:
+  - **Coluna 1 (Horário)**: Fundo `#ffea00` e borda `#f3ff00`. Texto do horário com `font-size: 20px` e cor `#121212`.
+  - **Coluna 2 (Avatar & Nome)**: Moldura do avatar do cliente com dimensões exatas de `50px x 50px`. Primeiro nome com `font-size: 12px`.
+  - **Coluna 4 (Botão Concluir)**: Botão de concluir atendimento com fundo `#007b1d` e texto branco para contraste em conformidade com as regras de design.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Unificação do Próximo Atendimento em Container Único Sem Espaçamento
+- **Tipo:** `[UI Refinement / Unified Container / Zero Gap / Clean Code]`
+- **Motivo / Solicitação:** Ajuste estrito conforme solicitação: todos os 4 elementos pertencem a um único contêiner unificado (`rounded-lg border overflow-hidden grid grid-cols-4 w-full h-[76px]`), sem espaçamento externo entre si (`gap-0`), separados internamente apenas por bordas divisórias.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Contêiner único envolvente com 4 colunas contínuas (`grid-cols-4`).
+    - Coluna 1 (Horário grande mono), Coluna 2 (Avatar quadrado e nome), Coluna 3 (Serviço com quebra de linha) divididas por borda vertical (`border-r`).
+    - Coluna 4 (Botões Iniciar e Concluir) preenchendo 100% de largura e altura sem qualquer padding ou margem.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Layout em 4 Cards Individuais no Próximo Atendimento (Conforme Desenho do Usuário)
+- **Tipo:** `[UI Layout / Visual Symmetry / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação visual e desenho enviado pelo usuário (`screenshot_1.png`):
+  1. **4 Cards Individuais**: Divisão em 4 cards simétricos independentes em `grid-cols-4`, alinhados perfeitamente com a linha de status abaixo.
+  2. **Hora Grande**: O horário (ex: `10:00`) com tipografia mono grande em destaque (`text-base sm:text-lg font-black text-emerald-400`).
+  3. **Avatar Quadrado**: Moldura do avatar do cliente em formato quadrado (`rounded-md`), padrão institucional do app, com primeiro nome logo abaixo.
+  4. **Quebra de Texto no Serviço**: Texto do serviço centralizado com quebra fluida de linha (`whitespace-normal break-words`).
+  5. **Botões 100% sem espaçamento**: Card 4 com `p-0 overflow-hidden` onde os botões "Iniciar" e "Concluir" preenchem 100% da área útil do contêiner sem margens ou paddings sobrando.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Eliminação de Divs Aninhadas no Card de Próximo Atendimento (Focus Mode / Zero Div-in-Div)
+- **Tipo:** `[Focus Mode / DOM Simplification / Semantic Markup / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação estrita do usuário ("ainda há div dentro de div quando desejo apenas uma div com os conteúdos solicitados"):
+  - Eliminado qualquer aninhamento de `div` dentro de `div` no card de Próximo Atendimento.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - O card `#professional-next-appointment-card` é agora a **única div** contêiner.
+    - Todos os elementos filhos internos foram desaninhandos ou convertidos para elementos semânticos planos diretos (`span` para horário, `figure`/`figcaption` para avatar e nome, `p` para serviço, e `section` para botões), eliminando 100% de `<div>` dentro de `<div>`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Remoção de Contêiner Externo dos Indicadores de Status (Focus Mode / Zero Box-in-Box)
+- **Tipo:** `[Focus Mode / Anti-Slop / Flat Layout / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta via Focus Mode: remoção da borda, fundo e padding do contêiner externo que envolvia os 4 indicadores de status, eliminando o aninhamento redundante de "caixa dentro de caixa".
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Removidas as classes `p-1 rounded-lg border bg-slate-900/70 border-slate-800` (e tema claro correspondente) do elemento pai `#professional-status-indicators-container`.
+    - Os 4 cards internos (Hoje, Confirmado, Pendentes, Cancelados) agora respiram diretamente na superfície da tela com espaçamento perfeito (`grid grid-cols-4 gap-1.5 w-full`), seguindo o padrão de design plano (flat).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Card de Próximo Atendimento Fullwidth no Contêiner Pai (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Layout Optimization / Fullwidth Alignment / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta via Focus Mode: a div de Próximo Atendimento agora ocupa 100% da largura (`w-full`) do contêiner pai da seção "Fila & Atendimentos".
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Desacoplado o card de Próximo Atendimento da grade de 2 colunas, permitindo que ele ocupe toda a largura horizontal útil do grupo.
+    - Os indicadores de status operacionais (Hoje, Confirmado, Pendentes, Cancelados) foram posicionados logo abaixo em uma linha uniforme (`grid-cols-4 w-full`), gerando uma hierarquia visual limpa e fluida.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Equalização das 4 Colunas do Card de Próximo Atendimento (Grid 1x4 Equidistante)
+- **Tipo:** `[UI Layout Refinement / Grid Symmetry / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta do usuário: todas as 4 colunas do card de Próximo Atendimento devem ter exatamente o mesmo tamanho (25% cada).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Atualizado o contêiner interno para `grid grid-cols-4`, garantindo divisão perfeitamente igualitária das 4 colunas.
+    - Ajustado o alinhamento e dimensionamento interno:
+      - Coluna 1 (Horário): centralizada, texto mono destacado com divisor vertical à direita.
+      - Coluna 2 (Cliente): avatar circular sobre o primeiro nome, centralizado com divisor.
+      - Coluna 3 (Serviço): descrição do serviço centralizada com divisor.
+      - Coluna 4 (Ações): botões "Iniciar" e "Concluir" estendidos a 100% da largura da coluna (`w-full`) empilhados harmoniosamente.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Reformulação em 4 Colunas do Card de Próximo Atendimento (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Reformulation / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Reformulação completa da div de destaque do Próximo Atendimento em 4 colunas horizontais lineares e funcionais:
+  1. **Coluna 1 (Horário)**: Dedicada ao horário no formato estrito `HH:MM`, tipografia mono em verde de destaque.
+  2. **Coluna 2 (Cliente)**: Foto/avatar circular centralizada sobre o primeiro nome do cliente.
+  3. **Coluna 3 (Serviço)**: Descrição do serviço com truncamento inteligente em até 2 linhas.
+  4. **Coluna 4 (Ações Operacionais)**: Botão "Iniciar" empilhado verticalmente sobre o botão "Concluir", com suporte a toque e atualização dinâmica de estado.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Adicionados os ícones `Play` e `Check` de `lucide-react`.
+    - Implementado gerenciamento de estado local (`localAppointmentStatuses`) para troca de status em tempo real ao clicar em "Iniciar" (fica com estilo "Iniciado" ativo) ou "Concluir" (avança a fila).
+    - Reestruturada a grade interna do card para layout horizontal `grid grid-cols-[auto_auto_1fr_auto]`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Reordenação dos Grupos da Tela Inicial do Profissional
+- **Tipo:** `[UI Layout Reordering / Mobile Synthesis / User Request]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta de reordenação dos blocos na visão do profissional:
+  1. **Fila & Atendimentos** (Próximo Cliente + Status 2x2)
+  2. **Metas & Turnos** (Velocímetro de Meta Diária + Evolução por Turno)
+  3. **Resumo Financeiro** (4 Números de Ouro: Caixa Realizado, Previsão, Ticket Médio, Líquido)
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Reordenado o fluxo dos grupos filhos dentro do contêiner rolável principal, posicionando **Metas & Turnos** imediatamente após **Fila & Atendimentos**, e **Resumo Financeiro** na sequência como base de fechamento operacional.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Remoção de Rodapé de Metas e Badges de Cabeçalho (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Streamlining / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta via Focus Mode ("REMOVER") para os três elementos selecionados:
+  1. Rodapé de resumo da meta diária em `GoalsAndShiftsCard` (`div:nth-of-type(3)`).
+  2. Badge "Hoje" no cabeçalho da seção Metas & Turnos (`span:nth-of-type(1)`).
+  3. Badge "Salão / Minhas Vendas" no cabeçalho da seção Resumo Financeiro (`span:nth-of-type(1)`).
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/GoalsAndShiftsCard.tsx`:
+    - Removida a barra/div de rodapé (`div:nth-of-type(3)`) contendo o texto de resumo da meta e valor.
+    - Removido import não utilizado de `CheckCircle2`, garantindo código 100% limpo sem imports mortos.
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Removido o badge de cabeçalho do Resumo Financeiro.
+    - Removido o badge de cabeçalho da seção Metas & Turnos.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Escopo Exclusivo do Dia Atual: "Metas & Turnos" (Focus Mode & Diretriz Geral da Seção Inicial)
+- **Tipo:** `[Focus Mode / Business Logic Alignment / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta e nota de negócio: a div "Metas & Turnos" selecionada deve contemplar estritamente o dia atual. Toda a seção inicial serve para operar o profissional no dia de hoje; consultas de períodos posteriores, semanas ou meses pertencem às seções gerais da aplicação.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/GoalsAndShiftsCard.tsx`:
+    - Removido o alternador de períodos (Dia / Semana / Mês) que permitia expandir a visão além do dia atual.
+    - Semicírculo de metas agora focado exclusivamente na **Meta Diária** (`dailyTarget` e `dailyAmount`), mantendo o velocímetro dinâmico em relação ao realizado hoje.
+    - Topo do card simplificado com selo "Meta Diária".
+    - Indicadores e rodapé atualizados para linguagem direta focada no dia atual ("Meta Hoje", "alcançado hoje", "atendimentos hoje").
+    - Removidos estados e imports obsoletos, assegurando código 100% limpo sem variáveis zumbis.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Remoção de Rodapé do Próximo Atendimento e Subtítulos Financeiros (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Streamlining / Mobile Synthesis / Clean Code]`
+- **Motivo / Solicitação:** Atendimento à solicitação direta via Focus Mode ("remover") para os três elementos selecionados:
+  1. Rodapé de tempo restante e valor do card de Próximo Atendimento (`div:nth-of-type(3)`).
+  2. Subtítulo descritivo de atendimentos pagos no card Caixa Realizado (`span:nth-of-type(1)`).
+  3. Subtítulo descritivo de horários marcados no card Previsão na Agenda (`span:nth-of-type(1)`).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Removido o rodapé com tempo restante e valor (`div:nth-of-type(3)`).
+    - Removida função auxiliar agora obsoleta `getRemainingTimeText`, garantindo código 100% limpo sem variáveis ou funções zumbis.
+  - `src/components/professional/dashboard/QuickFinancialCards.tsx`:
+    - Removidos os dois `span` selecionados dos cards de Caixa Realizado e Previsão na Agenda.
+    - Removidas variáveis não utilizadas da desestruturação dos props, mantendo a tipagem íntegra.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Unificação Lado a Lado: "Metas & Turnos" (Velocímetro + Evolução por Turno)
+- **Tipo:** `[Focus Mode / UI Layout Unification / Mobile Synthesis / Flat Layout]`
+- **Motivo / Solicitação:** Atendimento à solicitação de unir os dois elementos selecionados (gráfico meia-lua de metas e gráfico de barras de clientes por turno) lado a lado na tela inicial.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/GoalsAndShiftsCard.tsx`:
+    - Criado componente unificado integrando o Semicírculo de Metas (com alternador Dia/Semana/Mês) e o Gráfico de Evolução por Turno (Manhã, Tarde, Noite) em uma única estrutura lado a lado (`grid-cols-2`).
+    - Layout plano sem aninhamento de caixas ("box dentro de box"), respeitando a regra do fundo verde com tipografia branca de alto contraste.
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Adicionado cabeçalho padrão de grupo **Metas & Turnos** com ícone `Target` em verde esmeralda e selo temporal **Hoje**.
+    - Substituição dos dois cartões verticais empilhados pelo novo card unificado lado a lado.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-21] — Remoção da Grade "Feito vs Meta Alvo" no Velocímetro de Metas
+- **Tipo:** `[Focus Mode / UI Streamlining / Clean Code / User Request]`
+- **Motivo / Solicitação:** Atendimento à solicitação de remoção do elemento selecionado via Focus Mode (grade com valores de realizado e meta alvo dentro do Velocímetro de Metas).
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/SemiCircleGauge.tsx`:
+    - Removido o bloco correspondente ao seletor CSS indicado (`div:nth-of-type(4)` com valores de Hoje/Semana/Mês e Meta Alvo).
+    - Limpeza de estados e manipuladores não utilizados (`isEditing`, `editValue`, etc.), atendendo rigorosamente ao protocolo de Clean Code e zero poluição.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Adição de Cabeçalho Estruturado ao Grupo "Resumo Financeiro"
+- **Tipo:** `[Focus Mode / UI Enhancement / Mobile UX / Layout Hierarchy]`
+- **Motivo / Solicitação:** Atendimento à solicitação de inclusão de nome e agrupamento estruturado para os indicadores financeiros rápidos selecionados na tela inicial.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Adicionado cabeçalho visual e agrupamento para o conjunto de cartões financeiros (`QuickFinancialCards`), com ícone `DollarSign` em esmeralda, título **Resumo Financeiro** na tipografia Poppins e selo de contexto dinâmico (**Salão** para administradores / **Minhas Vendas** para profissionais individuais).
+    - Mantida perfeita harmonia com o bloco anterior de "Fila & Atendimentos" e aderência à diretriz de layout plano (zero "caixa dentro de caixa").
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Adição de Cabeçalho Estruturado ao Grupo "Fila & Atendimentos"
+- **Tipo:** `[Focus Mode / UI Enhancement / Mobile UX / Layout Hierarchy]`
+- **Motivo / Solicitação:** Atendimento à solicitação de inclusão de um cabeçalho para o grupo de elementos selecionados (card do próximo cliente e indicadores de status 2x2).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Adicionado cabeçalho visual limpo para o grupo, contendo ícone `CalendarCheck` em esmeralda, título **Fila & Atendimentos** com a tipografia padrão Poppins e selo temporal **Hoje**.
+    - Mantida a conformidade estrita com as regras de layout plano (sem aninhamento de caixas/border-in-border) e síntese mobile sem textos redundantes.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Remoção da Seção "Histórico & Desempenho Realizado" da Tela Inicial
+- **Tipo:** `[Refactor / Layout Streamlining / Clean UI / Strict User Request]`
+- **Motivo / Solicitação:** Atendimento direto à solicitação do usuário ("O histórico de desempenho realizado deve ser removido da seção inicial").
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`:
+    - Removida a seção expansível de "Histórico & Desempenho Realizado" (gráficos de histórico dos últimos 7 dias e distribuição de ranking de serviços).
+    - Removidos estados, cálculos e imports não utilizados (`History`, `ChevronDown`, `ChevronUp`, `isHistoryExpanded`, `serviceDistributionData`, `ClientEvolutionChart`, `ServiceDistributionChart`, etc.) garantindo clean code total sem código morto.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Simplificação Visual do Gráfico de Evolução de Clientes por Turno (Zero Poluição)
+- **Tipo:** `[Refactor / Visual Simplification / Mobile UX / Strict User Request]`
+- **Motivo / Solicitação:** Atendimento estrito à solicitação do usuário: remover toda a poluição textual e excesso de detalhes do gráfico por turno, mantendo uma visualização minimalista e direta: apenas o número de atendimentos do dia no topo de cada barra vertical e estritamente o título ("Manhã", "Tarde" ou "Noite") ao pé de cada barra.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/DayShiftsForecast.tsx`: Removidos textos secundários, horários fracionados, moedas, selos e gavetas densas. A estrutura foi enxugada para exibir exclusivamente:
+    - Topo de cada barra: número de clientes agendados para o turno.
+    - Corpo da barra: barra vertical verde esmeralda com altura proporcional.
+    - Pé de cada barra: apenas o título textual do turno (**Manhã**, **Tarde** ou **Noite**).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Gráfico de Barra de Evolução de Clientes por Turno (Manhã, Tarde e Noite) na Tela Inicial
+- **Tipo:** `[Feat / UX / Visual Bar Chart / Daily Shifts Forecast]`
+- **Motivo / Solicitação:** Conversão do gráfico de barras de evolução de clientes na tela inicial para a representação gráfica vertical por turnos (**Manhã, Tarde e Noite**), conforme solicitado pelo usuário ("O gráfico de barra evolução por clientes seria interessante na tela inicial ser por turno: manhã, tarde e noite").
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/DayShiftsForecast.tsx`: Transformado em um genuíno gráfico de barras verticais onde cada coluna representa um turno do dia:
+    - **Manhã (08h – 12h)**: Coluna vertical proporcional em tom âmbar, contagem de clientes no topo e faturamento estimado.
+    - **Tarde (12h – 18h)**: Coluna vertical proporcional com destaque de **Pico do Dia** em verde esmeralda sólido (`bg-emerald-500 text-white`).
+    - **Noite (18h – 22h)**: Coluna vertical proporcional em tom índigo/violeta.
+    - **Interatividade & Síntese**: Toque na coluna vertical abre gaveta com a lista resumida de clientes, horários e serviços daquele turno.
+    - **Alternador Rápido**: Seletor no cabeçalho permite alternar entre os **Turnos** de hoje e a visão dos **7 Dias** da semana.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Conectado `weekEvolutionData` ao gráfico de turnos na tela inicial.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Remoção da Ferramenta de Previsão de Serviços da Tela Inicial
+- **Tipo:** `[Refactor / Layout Streamlining / Clean UI]`
+- **Motivo / Solicitação:** Atendimento à solicitação de que a ferramenta "Previsão de Serviços" (e almoxarifado) não deve existir na tela inicial do profissional.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o componente `ServicesAndSuppliesForecast` e seu respectivo import da tela inicial, mantendo o painel inicial enxuto e centrado nos 4 Números de Ouro, Velocímetro de Metas, Previsão do Dia por Turnos e Histórico.
+  - A ferramenta de **Previsão de Insumos & Almoxarifado** continua totalmente preservada e acessível em sua seção própria dedicada em **Utilidades & Ferramentas** (sub-aba Insumos).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Conversão da Ferramenta para Previsão por Turnos (Manhã, Tarde e Noite) & Nova Seção de Histórico
+- **Tipo:** `[Feat / UX / Planning & Predictive Operations / Focus Mode]`
+- **Motivo / Solicitação:** Conversão da ferramenta de histórico na tela inicial para uma visão preditiva do dia por turnos (**Manhã, Tarde e Noite**), permitindo ao profissional visualizar previamente a carga horária de trabalho e a demanda prevista para hoje. Criação de uma nova categoria dedicada ("Histórico & Desempenho Realizado") para manter integradas as ferramentas anteriores (evolução dos últimos 7 dias e distribuição de serviços), evitando qualquer perda de funcionalidade.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/DayShiftsForecast.tsx`: Criado componente focado no futuro do dia com divisão nos turnos **Manhã** (08h - 12h), **Tarde** (12h - 18h) e **Noite** (18h - 22h), contagem de clientes previstos, receita estimada do turno, barra de ocupação, indicação de turno atual (`Agora`), destaque do pico de movimento e lista expansível ao toque com detalhes dos agendamentos (horário, cliente, serviço, valor e duração).
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Substituído o 4º elemento na tela inicial pelo novo `DayShiftsForecast`, e criada a categoria delimitada **Histórico & Desempenho Realizado** logo abaixo, contendo `ClientEvolutionChart` (últimos 7 dias) e `ServiceDistributionChart` (ranking de serviços).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Remoção de Utilidades da Seção Inicial (Painel Geral) via Focus Mode
+- **Tipo:** `[Refactor / Layout Optimization / Focus Mode]`
+- **Motivo / Solicitação:** Excluir o módulo de Utilidades (Água, Luz e Auditoria de Rede) da seção inicial do painel do profissional, mantendo-o exclusivamente em sua seção própria dedicada ("Utilidades & Ferramentas"), conforme solicitado pelo usuário via seleção de elemento em tela.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o componente `UtilitiesEfficiencySection` e seu respectivo import da tela inicial, mantendo o fluxo da tela inicial focado em Fila, Agenda, Métas Financeiras, Previsão Operacional e Gráficos de Desempenho.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Seção Própria de Utilidades & Ferramentas com Acesso no Menu de Opções e Ícone no Rodapé (Exclusivo Modo Gerenciamento)
+- **Tipo:** `[Feat / Navigation & Architecture / Tools & Infrastructure]`
+- **Motivo / Solicitação:** Inserir "Utilidades & Ferramentas" como opção no menu de opções do perfil, criar uma seção própria e dedicada para a ferramenta, e adicionar o ícone de navegação inferior (`BottomNav`) disponível estritamente no modo Gerenciamento (não visível para clientes).
+- **Arquivos Impactados:**
+  - `src/components/professional/UtilitiesAndToolsView.tsx`: Criada tela/seção dedicada com cabeçalho de navegação, alternador de sub-abas (Água & Luz com auditoria de relógios/fugas; Previsão de Insumos & Almoxarifado com ficha técnica; e Bancada Operacional com cronômetro de pausa química de 10 a 45 min e calculadora de proporção de oxidante para balança de precisão).
+  - `src/components/BottomNav.tsx`: Adicionada aba `utilidades` com ícone `Wrench` de `lucide-react` exibido exclusivamente em `isProfessionalMode` (modo Gerenciamento).
+  - `src/components/ProfileDrawer.tsx`: Inserida opção `Utilidades & Ferramentas` (`#menu-option-utilidades`) na listagem de opções do menu lateral (Gaveta de Perfil), com badge `Gestão` e redirecionamento direto para a seção.
+  - `src/components/professional/SalonCustomizationHub.tsx`: Integrado card `Utilidades & Ferramentas` no hub de customização e gestão do estabelecimento.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Atualizada tipagem do callback de navegação para suportar a rota `'utilidades'`.
+  - `src/components/SalonProfileView.tsx`: Atualizado estado `activeTab`, callback `handleSelectTab` e renderização de tela dedicada para a aba `utilidades`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Módulo de Utilidades & Eficiência (Água, Luz e Auditoria de Rede / Detecção de Fuga e "Gato")
+- **Tipo:** `[Feat / Hardware & Infrastructure / Financial Intelligence / UX]`
+- **Motivo / Solicitação:** Atendimento à solicitação de acompanhamento dos gastos de água e luz com inserção dos números dos medidores (kWh e m³), definição de tarifas das concessionárias, inventário de aparelhos com potência em Watts descrita nas etiquetas e cálculo de consumo teórico para detecção de anomalias (fugas de corrente, ligações clandestinas "gatos", ou redes compartilhadas com imóveis vizinhos).
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/UtilitiesEfficiencySection.tsx`: Criado componente completo com seletor de períodos (Diário, Semanal, Mensal), registro de medidores de relógio de luz e hidrômetro de água, inventário editável de aparelhos elétricos com potência em Watts (secador, ar-condicionado, frigobar, etc.), tarifas configuráveis (R$/kWh e R$/m³) e motor de auditoria de rede com diagnósticos automáticos contra fugas e vazamentos.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Integrado o módulo `UtilitiesEfficiencySection` diretamente no fluxo do dashboard do profissional.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Previsão de Serviços & Almoxarifado Inteligente (Ficha Técnica & Insumos)
+- **Tipo:** `[Feat / Stock & Supplies / Operational Planning]`
+- **Motivo / Solicitação:** Atendimento à solicitação de criar uma ferramenta de informação dos serviços previstos (com base nos agendamentos) para o dia, semana e mês, com ficha técnica e consumo de insumos por atendimento, permitindo ao profissional saber a autonomia de estoque e quantos serviços ainda pode realizar com os produtos disponíveis.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/ServicesAndSuppliesForecast.tsx`: Implementada a previsão com filtros Hoje/Semana/Mês, agrupamento de serviços previstos com contagem e faturamento estimado, controle de estoque de insumos (química, pomadas, giletes, toalhas, shampoos), cálculo de autonomia em dias/clientes e indicador visual de reabastecimento.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Integrado o módulo `ServicesAndSuppliesForecast` no fluxo contínuo do painel.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Velocímetro de Metas Abrangente: Visões Diária, Semanal e Mensal com Ajuste Rápido
+- **Tipo:** `[Feat / UI / Financial Intelligence / Focus Mode]`
+- **Motivo / Solicitação:** Solicitação no elemento focado do velocímetro de metas para torná-lo mais abrangente, permitindo o acompanhamento diário, semanal e mensal, apoiando diretamente a rotina prática dia a dia do profissional de beleza.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/SemiCircleGauge.tsx`: Implementado alternador de períodos com botões objetivos (`Diária`, `Semanal`, `Mensal`), persistência de metas individuais no `localStorage` (`vagou_daily_goal`, `vagou_weekly_goal`, `vagou_monthly_goal`), edição inline de meta com ícone de lápis e confirmação, cálculo dinâmico da meia-lua e mensagens práticas de cortes restantes contextualizadas para o dia, semana ou mês.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Adicionados os cálculos de faturamento realizado do dia (`dailyRealizedRevenue`) e da semana (`weeklyRealizedRevenue`), repassando-os ao componente `SemiCircleGauge`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Integração Unificada dos Itens de Dashboard & Metas Abaixo de Fila & Agenda
+- **Tipo:** `[UI / Layout Unification / UX]`
+- **Motivo / Solicitação:** Solicitação do usuário para posicionar todos os itens da aba Dashboard & Metas diretamente abaixo dos itens de Fila & Agenda em uma experiência de rolagem contínua e integrada na tela inicial do profissional.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Eliminado o alternador segmentado de modos (`Fila & Agenda` vs `Dashboard & Metas`) e o banner intermediário, integrando no mesmo fluxo vertical o Card de Destaque do Próximo Cliente e o Grid 2x2 de Status seguidos diretamente pelos 4 Números de Ouro (`QuickFinancialCards`), Velocímetro Meia-Lua da Meta (`SemiCircleGauge`), Evolução Diária de Clientes (`ClientEvolutionChart`) e Ranking de Serviços (`ServiceDistributionChart`).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Remoção da Ferramenta Selecionada (Próximos Clientes) no Painel Operacional via Focus Mode
+- **Tipo:** `[Refactor / Focus Mode / Clean Code]`
+- **Motivo / Solicitação:** Solicitação direta do usuário com seleção visual do elemento (`div:nth-of-type(3) > div:nth-of-type(2)`) no painel operacional para remoção do carrossel/lista de Próximos Clientes, preparando o espaço para inserção da nova ferramenta a ser definida pelo usuário.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removida a seção de Próximos Clientes (`div.space-y-3.5`), expurgadas variáveis e memos órfãos (`filteredDashboardAppointments`, `statusFilter`) e limpos os imports não utilizados de ícones (`Calendar`, `Scissors`, `TrendingUp`).
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Dashboard Financeiro Visual: Gráfico Meia-Lua (Velocímetro), Evolução de Clientes e Ranking de Serviços
+- **Tipo:** `[Feat / UI / Dashboard & Financial Intelligence]`
+- **Motivo / Solicitação:** Implementação de painel financeiro visual e intuitivo com linguagem simples ("sem MBA"), trazendo gráfico de evolução de clientes dos últimos 7 dias, ranking proporcional de serviços mais realizados, velocímetro meia-lua de metas configuráveis (com tradução prática de quantos cortes faltam) e alternador ágil entre modo operacional e dashboard na tela inicial do profissional e na aba Balanço & Metas.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/QuickFinancialCards.tsx`: Cartões dos 4 números de ouro (Caixa Realizado, Previsão em Aberto, Média por Cliente, Lucro Líquido / Meu Bolso).
+  - `src/components/professional/dashboard/SemiCircleGauge.tsx`: Gráfico Meia-Lua em arco SVG suave com agulha indicadora, porcentagem, valor realizado vs meta ajustável e cálculo automático de cortes restantes.
+  - `src/components/professional/dashboard/ClientEvolutionChart.tsx`: Gráfico de colunas de evolução diária de clientes e faturamento com dia de pico destacado e estatísticas sintetizadas.
+  - `src/components/professional/dashboard/ServiceDistributionChart.tsx`: Gráfico de barras horizontais com o ranking e volume dos serviços mais procurados no salão/profissional.
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Integrado alternador de modos (`Fila & Agenda` vs `Dashboard & Metas`), banner de atalho da meta com tradução rápida e visão completa dos gráficos na tela inicial.
+  - `src/components/professional/FinancialManagerView.tsx`: Integrados os gráficos meia-lua, evolução de clientes e distribuição de serviços na aba `Balanço & Metas`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Restauração do Layout Original do Painel Operacional (Card Próximo Cliente + Grid 2x2 de Status)
+- **Tipo:** `[Fix / UI / Layout Restoration]`
+- **Motivo / Solicitação:** Restauração do layout íntegro e consagrado do painel operacional ("op"), corrigindo o descompasso causado anteriormente: restaurado o Card de Destaque do Próximo Cliente (Coluna 1) com horário, status, avatar, serviço e tempo restante, e recomposto o container `#professional-status-indicators-container` (Coluna 2) com o grid 2x2 de cards informativos sólidos (Hoje em azul, Confirmado em verde, Pendentes em amarelo e Cancelados em vermelho).
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Restaurado o grid superior de 2 colunas lado a lado, cálculo memoizado `nextAppointment`, card informativo elegante do próximo atendimento e grade 2x2 compacta de 4 status informativos sem botões desproporcionais ou quebra de fluxo.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Restauração da Seção de Indicadores de Status no Painel Operacional
+- **Tipo:** `[Fix / UI / Focus Mode]`
+- **Motivo / Solicitação:** Recomposição do container de indicadores de status (`#professional-status-indicators-container`) no painel operacional.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Restaurado o card de status `Concluído`, adicionados ícones autoexplicativos (`CheckCircle2`, `CheckCheck`, `Clock`, `XCircle`, `Calendar` de `lucide-react`), adicionada interatividade por clique para alternar filtros de status/tempo e realce do card ativo.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-20] — Formatação com Máscara de Milhares e Vírgula nos Campos de Metas e Projeções
+- **Tipo:** `[UI / UX / Input Mask]`
+- **Motivo / Solicitação:** Formatação dos campos numéricos da calculadora de Ponto de Equilíbrio (`Meta de Lucro Desejada`, `Dias Úteis / Mês` e `Média Clientes / Dia`) para permitirem entrada livre com máscara automática de separador de milhares por ponto (`.`) e decimais por vírgula (`,`).
+- **Arquivos Impactados:**
+  - `src/components/professional/financial/BreakEvenSimulator.tsx`: Adicionadas funções utilitárias `formatBrazilianNumber` e `parseBrazilianNumber`, alterado o tipo dos inputs para `type="text"` com `inputMode="decimal"` para excelente usabilidade mobile e aplicação dinâmica da máscara.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-19] — Módulo Financeiro: Gestão de Custos & Despesas e Simulador de Ticket Médio Alvo
+- **Tipo:** `[Feat / Financial Management / Break-Even Simulator]`
+- **Motivo / Solicitação:** Implementação da ferramenta de controle de custos/despesas e simulador estratégico de ponto de equilíbrio (Break-Even) e ticket médio alvo no módulo financeiro.
+- **Arquivos Impactados:**
+  - `src/types.ts`: Adicionada a interface `FinancialExpense` para modelagem de despesas (descrição, categoria fixa/variável, vencimento, valor, status e âmbito).
+  - `src/components/professional/financial/ExpensesManager.tsx`: Criado componente modular para cadastro, filtragem e acompanhamento de custos e despesas com alerta de vencimentos, filtros ágeis e badges com alto contraste.
+  - `src/components/professional/financial/BreakEvenSimulator.tsx`: Criado simulador de ponto de equilíbrio com termômetro de cobertura de custos, cálculo automático de Ticket Médio Alvo por atendimento e slider interativo para simulação dinâmicas ("E se...?").
+  - `src/components/professional/FinancialManagerView.tsx`: Integrado menu de sub-abas (`Caixa & Entradas`, `Custos & Despesas` e `Balanço & Metas`) e persistência em `localStorage`.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-19] — Remoção do Card do Próximo Cliente no Painel Operacional
+- **Tipo:** `[UI / Cleanup / Focus Mode]`
+- **Motivo / Solicitação:** Remoção do card de destaque "Próximo Cliente / Sem atendimento" (Coluna 1) selecionado via Focus Mode no painel operacional (`ProfessionalDashboardView`), otimizando o layout para exibir as métricas de status de forma centralizada e direta.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removida a Coluna 1 que continha o card de destaque do próximo atendimento, adaptando a seção de indicadores de status para um layout fluido de grid de status de alta legibilidade.
+- **Contraprova & Build:**
+  - `lint_applet`: Concluído com sucesso (0 erros).
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-19] — Suporte a Logos Duplos (Tema Claro e Tema Escuro)
+- **Tipo:** `[Feat / Visual Identity / Theming]`
+- **Motivo / Solicitação:** Inserção de duas opções de logo independentes (um logo para Tema Claro e um logo para Tema Escuro) e reescrita do fluxo de upload, pré-visualização e persistência para alternar dinamicamente o logo com base no tema ativo.
+- **Arquivos Impactados:**
+  - `src/types.ts`: Adicionados os campos `salonLogoLight` e `salonLogoDark` à interface `SalonAdminSettings`.
+  - `src/components/professional/VisualIdentityCardView.tsx`: Reformulada a seção de logos do cabeçalho com dois cards dedicados (Logo Tema Claro com prévia em topo claro e Logo Tema Escuro com prévia em topo escuro), upload independente por clique ou arrastar/soltar, remoção seletiva e persistência completa ao salvar.
+  - `src/components/SalonProfileView.tsx`: Atualizada a resolução de logo no cabeçalho e avatar para alternar dinamicamente entre `salonLogoDark` (no modo escuro) e `salonLogoLight` (no modo claro), com fallback gracioso para `salonLogo` ou texto estilizado.
+  - `src/components/professional/ProfessionalSpaceManager.tsx`: Atualizado o gerenciador do espaço para preservar `salonLogoLight` e `salonLogoDark` de forma consistente nas configurações gerais.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-19] — Focus Mode: Remoção da Seção "Previsões & Caixa" no Painel Operacional
+- **Tipo:** `[UI / Cleanup / Focus Mode]`
+- **Motivo / Solicitação:** Remoção da terceira seção do painel (`Previsões & Caixa` e cards de valores/projeções) selecionada via Focus Mode no `ProfessionalDashboardView`, mantendo o painel inicial mais leve, ágil e focado no atendimento imediato.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removida a seção de Previsões & Caixa, removido o hook `useMemo` de `financialProjections`, e limpos os imports não utilizados de ícones (`TrendingUp`, `Wallet`, `CalendarRange`, `ChevronRight`) seguindo o protocolo de Clean Code.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-19] — Focus Mode: Tipografia Escura Harmonizada com a Cor do Tema no Seletor e Botão de Status
+- **Tipo:** `[UI / Contrast & Color / Focus Mode]`
+- **Motivo / Solicitação:** Ajuste de tipografia nos elementos selecionados (`select#dashboard-pro-switcher` e botão de alternância "Pausar / Abrir") para que no tema claro o texto seja escuro, de alto contraste e harmonizado com a cor do tema.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Atualizada a cor do texto do seletor de profissional e do botão de pausa/abertura no tema claro para tom escuro e rico derivado da cor temática (`text-emerald-950` / `text-amber-950`).
+  - `src/index.css`: Adicionada a regra `.text-accent-dark` e `html:not(.dark) .text-emerald-950` usando `color-mix` para assegurar contraste ótimo e sintonia perfeita com qualquer cor de destaque personalizada.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-19] — Focus Mode: Bordas Sutis Harmonizadas com a Cor do Tema (Dark e Light)
+- **Tipo:** `[UI / Theme & Style / Focus Mode]`
+- **Motivo / Solicitação:** Ajuste global para que todas as bordas dos contêineres, cards e divisores (tanto no tema claro quanto no escuro) sejam suavemente harmonizadas e levemente próximas da cor do tema escolhido pelo estabelecimento (`--accent-color`).
+- **Arquivos Impactados:**
+  - `src/index.css`: Adicionadas regras com `color-mix(in srgb, var(--accent-color) X%, ...)` para classes estruturais de borda nos temas Dark (`border-slate-800`, `border-slate-700`, `border-slate-900`) e Light (`border-slate-200`, `border-slate-300`, `border-slate-100`), garantindo sintonia cromática automática com a cor de destaque do estabelecimento sem quebrar os selos específicos de status.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+### [2026-09-19] — Focus Mode: Remoção do Botão "Gerenciar" e Rótulo de Status no Cabeçalho do Painel
+- **Tipo:** `[UI / Cleanup / Focus Mode]`
+- **Motivo / Solicitação:** Remoção do botão `#dashboard-btn-gerenciar` ("Gerenciar"), do texto do status ("Aberto / Fechado") e do separador de ponto ("•") selecionados via Focus Mode no cabeçalho operacional do `ProfessionalDashboardView`, mantendo o topo mais limpo, direto e compacto.
+- **Arquivos Impactados:**
+  - `src/components/professional/ProfessionalDashboardView.tsx`: Removido o botão de gerenciar no topo, removidos os elementos de texto do status mantendo o indicador visual circular, e removido o import não utilizado de `Sparkles`.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
+
+### [2026-09-19] — Focus Mode: Estilização de Bordas nos Botões da Barra de Navegação (BottomNav)
+- **Tipo:** `[UI / Style / Focus Mode]`
+- **Motivo / Solicitação:** Adição de cores e definição de bordas nos botões da barra de navegação inferior (`BottomNav`), assegurando nitidez e contraste tanto para o estado ativo quanto para o estado inativo em ambos os temas (Dark Slate e Light Pearl).
+- **Arquivos Impactados:**
+  - `src/components/BottomNav.tsx`: Aplicada borda em destaque `border-2 border-accent` (Dark) / `border-2 border-white` (Light) nos botões ativos, e borda nítida `border border-slate-700/80 bg-slate-900/60` (Dark) / `border border-white/30 bg-white/10` (Light) nos botões inativos com transições refinadas de hover.
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+
 ### [2026-09-19] — Remoção da Badge Secundária do Botão "Pro" no Seletor de Persona
 - **Tipo:** `[UI / Cleanup]`
 - **Motivo / Solicitação:** Remoção da etiqueta/badge secundária interna ("Admin" / "Membro") selecionada pelo usuário no botão "Pro" do cabeçalho, mantendo o controle simétrico, limpo e enxuto entre `Cliente` e `Pro`.

@@ -44,6 +44,7 @@ export interface BookingAppointment {
   protocolCode: string;
   service?: string;
   serviceTitle?: string;
+  serviceName?: string;
   professional?: string;
   professionalName?: string;
   salonName: string;
@@ -51,6 +52,7 @@ export interface BookingAppointment {
   dayGroup?: string;
   time?: string;
   duration?: string;
+  durationMinutes?: number;
   totalPrice: number;
   status: 'EM ANDAMENTO' | 'CONFIRMADO' | 'AGENDADO' | 'CONCLUÍDO' | 'CANCELADO' | 'PENDENTE' | 'ALTERADO' | 'BLOQUEADO' | 'concluido' | 'confirmado' | 'cancelado' | 'agendado' | 'em andamento' | 'pendente' | 'alterado' | 'bloqueado' | string;
   address?: string;
@@ -74,6 +76,50 @@ export interface BookingAppointment {
   // Bloqueio de Horário
   isBlockedSlot?: boolean;
   blockReason?: string;
+
+  // Remanejamento e Troca de Horário entre Clientes (Proposta A <-> B)
+  swapRequest?: {
+    isClientSwap: boolean;
+    message?: string;
+    clientA: {
+      name: string;
+      originalTime: string;
+      requestedTime: string;
+      phone?: string;
+    };
+    clientB: {
+      name: string;
+      originalTime: string;
+      accepted: boolean;
+      rejected?: boolean;
+      phone?: string;
+    };
+    status: 'pending_client_b' | 'pending_salon_confirmation' | 'confirmed' | 'rejected';
+    rejectedSlots?: string[];
+    // Fila em Cascata Automática (A -> B -> C -> D)
+    cascadeTargets?: SwapTargetQueueItem[];
+    currentCascadeIndex?: number;
+    timeoutSecondsPerTarget?: number;
+    lastTargetUpdatedAt?: number;
+  };
+}
+
+export interface SwapTargetQueueItem {
+  slotTime: string;
+  customerName?: string;
+  customerPhone?: string;
+  status: 'pending' | 'timeout' | 'rejected' | 'accepted';
+  sentAt?: number;
+  expiresAt?: number;
+}
+
+export interface ClientSwapGovernance {
+  optIn: boolean; // Optante para participar da rede solidária de trocas
+  monthlyQuota: number; // Padrão 2 trocas por mês
+  usedThisMonth: number; // Trocas solicitadas no mês corrente
+  activeRejections: number; // Recusas ativas explícitas (limite 5)
+  consecutiveTimeouts: number; // Vácuos consecutivos (limite 3 -> desativa optIn)
+  isBannedFromRequesting: boolean; // Suspenso se activeRejections >= 5
 }
 
 export type UserPersona = 'cliente' | 'pro' | 'profissional' | 'admin';
@@ -84,6 +130,7 @@ export interface UserProfile {
   phone: string;
   address: string;
   avatarUrl?: string;
+  swapGovernance?: ClientSwapGovernance;
 }
 
 export interface DayOperatingHours {
@@ -109,7 +156,9 @@ export interface SalonAdminSettings {
   isOpenNow: boolean;
   pinCode: string;
   accentColor?: string;
-  salonLogo?: string; // Logo retangular horizontal para o cabeçalho do app
+  salonLogo?: string; // Logo padrão / fallback
+  salonLogoLight?: string; // Logo horizontal para o tema claro (fundo claro)
+  salonLogoDark?: string; // Logo horizontal para o tema escuro (fundo escuro)
   salonIcon?: string; // Ícone quadrado (1:1) para o PWA (instalação no celular)
   pwaName?: string;   // Nome curto/completo exibido na tela inicial do celular
 
@@ -175,6 +224,17 @@ export interface CatalogServiceItem {
 }
 
 export type ProfessionalRole = 'admin' | 'professional' | 'receptionist';
+
+export interface FinancialExpense {
+  id: string;
+  description: string;
+  amount: number;
+  dueDate: string; // YYYY-MM-DD
+  category: 'fixed' | 'variable'; // Fixo ou Variável
+  status: 'paid' | 'pending' | 'overdue';
+  scope: 'salon' | 'personal'; // Salão Todo ou Custo Pessoal
+  createdAt: string;
+}
 
 export interface ProfessionalWorkSchedule {
   shiftType: 'manha' | 'tarde' | 'integral' | 'sabados' | 'personalizado';

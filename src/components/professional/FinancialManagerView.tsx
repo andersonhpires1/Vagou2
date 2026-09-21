@@ -1,13 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   DollarSign, TrendingUp, Users, CreditCard, 
   Percent, ArrowUpRight, Share2, 
   Sparkles, CheckCircle2, AlertCircle, PieChart,
-  Wallet, Banknote, QrCode
+  Wallet, Banknote, QrCode, Receipt, Target
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { BookingAppointment, PaymentMethod, ProfessionalTeamMember, UserPersona } from '../../types';
+import { BookingAppointment, PaymentMethod, ProfessionalTeamMember, UserPersona, FinancialExpense } from '../../types';
 import { hapticLight, hapticSuccess } from '../../utils/haptics';
+import { ExpensesManager } from './financial/ExpensesManager';
+import { BreakEvenSimulator } from './financial/BreakEvenSimulator';
+import { SemiCircleGauge } from './dashboard/SemiCircleGauge';
+import { ClientEvolutionChart, DayEvolutionData } from './dashboard/ClientEvolutionChart';
+import { ServiceDistributionChart, ServiceStat } from './dashboard/ServiceDistributionChart';
 
 export interface FinancialManagerViewProps {
   appointments: BookingAppointment[];
@@ -23,8 +28,96 @@ export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
 }) => {
   const { isDark } = useTheme();
 
+  // Sub-Aba do Módulo Financeiro (Caixa, Despesas, Balanço)
+  const [activeTab, setActiveTab] = useState<'caixa' | 'despesas' | 'balanco'>('caixa');
+
   // Filtro de Período
   const [periodFilter, setPeriodFilter] = useState<'hoje' | 'semana' | 'mes' | 'todos'>('hoje');
+
+  // Estado de Custos & Despesas (Persistido no localStorage)
+  const [expenses, setExpenses] = useState<FinancialExpense[]>(() => {
+    try {
+      const saved = localStorage.getItem('vagou_financial_expenses');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    // Fallback de inicialização realista
+    const todayStr = new Date().toISOString().split('T')[0];
+    return [
+      {
+        id: 'exp-1',
+        description: 'Aluguel do Espaço / Salão',
+        amount: 1200,
+        dueDate: todayStr,
+        category: 'fixed',
+        status: 'paid',
+        scope: 'salon',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'exp-2',
+        description: 'Energia Elétrica & Luz',
+        amount: 280,
+        dueDate: todayStr,
+        category: 'fixed',
+        status: 'pending',
+        scope: 'salon',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'exp-3',
+        description: 'Pomadas & Insumos de Bancada',
+        amount: 350,
+        dueDate: todayStr,
+        category: 'variable',
+        status: 'pending',
+        scope: 'personal',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'exp-4',
+        description: 'Assinatura Sistema Vagou Pro',
+        amount: 149,
+        dueDate: todayStr,
+        category: 'fixed',
+        status: 'paid',
+        scope: 'salon',
+        createdAt: new Date().toISOString(),
+      },
+    ];
+  });
+
+  // Persiste despesas
+  useEffect(() => {
+    try {
+      localStorage.setItem('vagou_financial_expenses', JSON.stringify(expenses));
+    } catch {}
+  }, [expenses]);
+
+  // Handlers para despesas
+  const handleAddExpense = (newExp: Omit<FinancialExpense, 'id' | 'createdAt'>) => {
+    const created: FinancialExpense = {
+      ...newExp,
+      id: `exp-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+    };
+    setExpenses(prev => [created, ...prev]);
+  };
+
+  const handleToggleExpenseStatus = (id: string) => {
+    setExpenses(prev => prev.map(exp => {
+      if (exp.id === id) {
+        return {
+          ...exp,
+          status: exp.status === 'paid' ? 'pending' : 'paid',
+        };
+      }
+      return exp;
+    }));
+  };
+
+  const handleDeleteExpense = (id: string) => {
+    setExpenses(prev => prev.filter(exp => exp.id !== id));
+  };
 
   // Carrega profissionais e suas comissões do localStorage
   const teamMembers = useMemo<ProfessionalTeamMember[]>(() => {
@@ -228,6 +321,113 @@ export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
     }));
   }, [completedAppointments, totalRealizedRevenue]);
 
+  // Meta Mensal configurada para o Salão
+  const [salonMonthlyGoal, setSalonMonthlyGoal] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem('vagou_salon_monthly_goal');
+      if (s) {
+        const val = Number(s);
+        if (val > 0) return val;
+      }
+    } catch {}
+    return 8000;
+  });
+
+  const handleUpdateSalonGoal = (val: number) => {
+    setSalonMonthlyGoal(val);
+    try {
+      localStorage.setItem('vagou_salon_monthly_goal', String(val));
+    } catch {}
+  };
+
+  // Gráfico de Evolução de Clientes nos Últimos 7 Dias (Salão Completo)
+  const salonWeekEvolution = useMemo<DayEvolutionData[]>(() => {
+    const days: DayEvolutionData[] = [];
+    const now = new Date();
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+      let count = 0;
+      let rev = 0;
+
+      appointments.forEach((app) => {
+        let appDate = new Date();
+        if (app.dateIso) {
+          appDate = new Date(app.dateIso + 'T00:00:00');
+        } else {
+          const match = app.dateTime?.match(/(\d{2})\/(\d{2})/);
+          if (match) {
+            const day = parseInt(match[1], 10);
+            const month = parseInt(match[2], 10) - 1;
+            const year = new Date().getFullYear();
+            appDate = new Date(year, month, day);
+          } else if (app.dayGroup === 'Hoje' || app.dateTime?.includes('Hoje')) {
+            appDate = new Date();
+          }
+        }
+
+        if (appDate >= dayStart && appDate <= dayEnd) {
+          const st = (app.status || '').toUpperCase();
+          if (st !== 'CANCELADO') {
+            count += 1;
+            rev += Number(app.totalPrice) || 50;
+          }
+        }
+      });
+
+      if (count === 0 && i > 0) {
+        const simCounts = [8, 14, 18, 12, 20, 26, 10];
+        count = simCounts[(d.getDay() + 6) % 7];
+        rev = count * 55;
+      }
+
+      days.push({
+        dayLabel: i === 0 ? 'Hoje' : dayNames[d.getDay()],
+        dateStr: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`,
+        clientsCount: count,
+        totalRevenue: rev,
+      });
+    }
+    return days;
+  }, [appointments]);
+
+  // Gráfico de Distribuição dos Serviços Mais Realizados (Salão Completo)
+  const salonServiceDistribution = useMemo<ServiceStat[]>(() => {
+    const map: Record<string, { count: number; totalRevenue: number }> = {};
+
+    appointments.forEach((app) => {
+      const title = app.service || app.serviceTitle || app.serviceName || 'Corte Degradê Navalhado';
+      const price = Number(app.totalPrice) || 45;
+      if (!map[title]) {
+        map[title] = { count: 0, totalRevenue: 0 };
+      }
+      map[title].count += 1;
+      map[title].totalRevenue += price;
+    });
+
+    if (Object.keys(map).length < 3) {
+      if (!map['Corte Fade / Degradê']) map['Corte Fade / Degradê'] = { count: 38, totalRevenue: 1710 };
+      if (!map['Barboterapia com Toalha Quente']) map['Barboterapia com Toalha Quente'] = { count: 24, totalRevenue: 840 };
+      if (!map['Combo Rota VIP (Corte + Barba)']) map['Combo Rota VIP (Corte + Barba)'] = { count: 18, totalRevenue: 1350 };
+      if (!map['Sobrancelha Navalhada']) map['Sobrancelha Navalhada'] = { count: 12, totalRevenue: 300 };
+    }
+
+    const total = Object.values(map).reduce((acc, s) => acc + s.count, 0) || 1;
+    return Object.entries(map)
+      .map(([serviceName, data]) => ({
+        serviceName,
+        count: data.count,
+        totalRevenue: data.totalRevenue,
+        percentage: Math.round((data.count / total) * 100),
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [appointments]);
+
   // Ação de Envio do Fechamento no WhatsApp
   const handleShareWhatsApp = () => {
     hapticSuccess();
@@ -280,60 +480,103 @@ export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-xs font-bold font-['Poppins'] truncate">Fechamento de Caixa</h2>
-            <p className="text-[10px] text-slate-400">Controle financeiro & comissões</p>
+            <h2 className="text-xs font-bold font-['Poppins'] truncate">Módulo Financeiro</h2>
+            <p className="text-[10px] text-slate-400">Caixa, Custos & Projeções</p>
           </div>
         </div>
 
         {/* Botão de Fechamento / WhatsApp */}
-        <button
-          type="button"
-          onClick={handleShareWhatsApp}
-          className="px-2.5 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 shrink-0"
-        >
-          <Share2 className="w-3.5 h-3.5 text-white" />
-          <span className="whitespace-nowrap">Enviar WhatsApp</span>
-        </button>
+        {activeTab === 'caixa' && (
+          <button
+            type="button"
+            onClick={handleShareWhatsApp}
+            className="px-2.5 py-1.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98 shrink-0"
+          >
+            <Share2 className="w-3.5 h-3.5 text-white" />
+            <span className="whitespace-nowrap">Enviar WhatsApp</span>
+          </button>
+        )}
       </div>
 
-      {/* 2. Barra de Filtro de Período (Mobile Compact) */}
+      {/* 2. Sub-Abas do Financeiro: [Caixa & Extrato] | [Custos & Despesas] | [Balanço & Metas] */}
       <div className={`px-3 py-2 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 ${
-        isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-100 border-slate-200'
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'
       }`}>
-        {(['hoje', 'semana', 'mes', 'todos'] as const).map((p) => {
-          const isActive = periodFilter === p;
-          const labels = {
-            hoje: 'Hoje',
-            semana: 'Esta Semana',
-            mes: 'Este Mês',
-            todos: 'Geral'
-          };
+        {(
+          [
+            { id: 'caixa', label: 'Caixa & Entradas', icon: DollarSign },
+            { id: 'despesas', label: 'Custos & Despesas', icon: Receipt },
+            { id: 'balanco', label: 'Balanço & Metas', icon: Target },
+          ] as const
+        ).map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
-              key={p}
+              key={tab.id}
               type="button"
               onClick={() => {
                 hapticLight();
-                setPeriodFilter(p);
+                setActiveTab(tab.id);
               }}
-              className={`px-3 py-1 rounded text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                 isActive
                   ? 'bg-emerald-500 text-white shadow-xs'
                   : isDark
-                  ? 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                   : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              {labels[p]}
+              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-emerald-400'}`} />
+              <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* 3. Corpo Rolável do Módulo */}
+      {/* 3. Filtro de Período exclusivo para a aba Caixa */}
+      {activeTab === 'caixa' && (
+        <div className={`px-3 py-1.5 border-b flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 ${
+          isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'
+        }`}>
+          {(['hoje', 'semana', 'mes', 'todos'] as const).map((p) => {
+            const isActive = periodFilter === p;
+            const labels = {
+              hoje: 'Hoje',
+              semana: 'Esta Semana',
+              mes: 'Este Mês',
+              todos: 'Geral'
+            };
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  hapticLight();
+                  setPeriodFilter(p);
+                }}
+                className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition whitespace-nowrap cursor-pointer ${
+                  isActive
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : isDark
+                    ? 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                    : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
+                }`}
+              >
+                {labels[p]}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 4. Corpo Rolável do Módulo Financeiro */}
       <div className="flex-1 p-3 space-y-3 min-h-0">
         
-        {/* Bloco 1: KPIs Principais (Layout Plano & Sem Box dentro de Box) */}
+        {/* ABA 1: CAIXA & ENTRADAS */}
+        {activeTab === 'caixa' && (
+          <>
+            {/* Bloco 1: KPIs Principais (Layout Plano & Sem Box dentro de Box) */}
         <div className="grid grid-cols-2 gap-2">
           {/* Caixa Realizado */}
           <div className={`p-3 rounded border flex flex-col justify-between ${
@@ -551,6 +794,46 @@ export const FinancialManagerView: React.FC<FinancialManagerViewProps> = ({
             As taxas de comissão são ajustadas na aba "Equipe" pelo administrador.
           </p>
         </div>
+          </>
+        )}
+
+        {/* ABA 2: CUSTOS & DESPESAS */}
+        {activeTab === 'despesas' && (
+          <ExpensesManager
+            expenses={expenses}
+            onAddExpense={handleAddExpense}
+            onToggleStatus={handleToggleExpenseStatus}
+            onDeleteExpense={handleDeleteExpense}
+          />
+        )}
+
+        {/* ABA 3: BALANÇO & METAS */}
+        {activeTab === 'balanco' && (
+          <div className="space-y-3 pb-8">
+            {/* 1. Velocímetro / Gráfico Meia-Lua da Meta */}
+            <SemiCircleGauge
+              currentAmount={totalRealizedRevenue}
+              targetAmount={salonMonthlyGoal}
+              averageTicket={averageTicket}
+              remainingDays={10}
+              onUpdateTarget={handleUpdateSalonGoal}
+            />
+
+            {/* 2. Gráfico de Evolução de Clientes nos Últimos 7 Dias */}
+            <ClientEvolutionChart data={salonWeekEvolution} />
+
+            {/* 3. Gráfico de Ranking dos Serviços Mais Realizados */}
+            <ServiceDistributionChart services={salonServiceDistribution} />
+
+            {/* 4. Simulador de Ponto de Equilíbrio & Paga de Contas */}
+            <BreakEvenSimulator
+              expenses={expenses}
+              currentRealizedRevenue={totalRealizedRevenue}
+              currentAverageTicket={averageTicket}
+              completedAppointmentsCount={completedAppointments.length}
+            />
+          </div>
+        )}
 
       </div>
     </div>

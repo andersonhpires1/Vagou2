@@ -1,12 +1,12 @@
 import React from 'react';
-import { Home, Calendar, LayoutDashboard, DollarSign, Scissors, Users, Store } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, DollarSign, Scissors, Users, Store, Wrench } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { hapticLight } from '../utils/haptics';
 import { UserPersona } from '../types';
 
 export interface SalonNavContext {
-  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
-  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => void;
+  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
+  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
@@ -18,8 +18,8 @@ export interface SalonNavContext {
 
 interface BottomNavProps {
   salonContext?: SalonNavContext | null;
-  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
-  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar') => void;
+  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
+  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
@@ -62,7 +62,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   }
 
   let establishmentTabs: Array<{
-    id: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar';
+    id: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
   }> = [];
@@ -73,12 +73,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         { id: 'home', label: 'Painel', icon: LayoutDashboard },
         { id: 'vagas', label: vagasTabLabel, icon: Calendar },
         { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+        { id: 'utilidades', label: 'Utilidades', icon: Wrench },
       ];
     } else {
       establishmentTabs = [
         { id: 'home', label: 'Painel', icon: LayoutDashboard },
         { id: 'vagas', label: vagasTabLabel, icon: Calendar },
         { id: 'financeiro', label: 'Comissões', icon: DollarSign },
+        { id: 'utilidades', label: 'Utilidades', icon: Wrench },
       ];
     }
   } else {
@@ -113,11 +115,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             <div className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center transition-all ${
               isActive
                 ? isDark
-                  ? 'bg-accent/20 border border-accent text-white scale-105 shadow-[0_0_12px_var(--accent-color)]/25'
-                  : 'bg-white text-slate-900 border border-white scale-105 shadow-sm'
+                  ? 'bg-accent/20 border-2 border-accent text-white scale-105 shadow-[0_0_12px_var(--accent-color)]/30'
+                  : 'bg-white text-slate-900 border-2 border-white scale-105 shadow-sm'
                 : isDark
-                  ? 'text-slate-400 hover:text-slate-200'
-                  : 'text-white/80 hover:text-white hover:bg-white/15'
+                  ? 'text-slate-400 hover:text-slate-200 border border-slate-700/80 bg-slate-900/60 hover:border-slate-600 hover:bg-slate-800/80'
+                  : 'text-white/80 hover:text-white hover:bg-white/20 border border-white/30 hover:border-white/50 bg-white/10'
             }`}>
               <Icon className="w-5 h-5 stroke-[2.2]" />
             </div>

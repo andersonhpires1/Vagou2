@@ -33,6 +33,8 @@ export const ProfessionalSpaceManager: React.FC<ProfessionalSpaceManagerProps> =
   
   // Ativos visuais separados: Logo Retangular (Cabeçalho) vs Ícone Quadrado (PWA)
   const [salonLogo, setSalonLogo] = useState(adminSettings.salonLogo || '');
+  const [salonLogoLight, setSalonLogoLight] = useState(adminSettings.salonLogoLight || '');
+  const [salonLogoDark, setSalonLogoDark] = useState(adminSettings.salonLogoDark || '');
   const [salonIcon, setSalonIcon] = useState(adminSettings.salonIcon || '');
   const [accentColor, setAccentColor] = useState(adminSettings.accentColor || '#10b981');
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -110,6 +112,8 @@ export const ProfessionalSpaceManager: React.FC<ProfessionalSpaceManagerProps> =
       openingHours,
       pinCode,
       salonLogo,
+      salonLogoLight,
+      salonLogoDark,
       salonIcon,
       accentColor,
     };

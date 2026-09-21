@@ -19,6 +19,10 @@
 .hover\:border-accent:hover { border-color: var(--accent-color); }
 .bg-accent-subtle { background-color: color-mix(in srgb, var(--accent-color), white 80%) !important; }
 .border-accent-subtle { border-color: color-mix(in srgb, var(--accent-color), white 50%) !important; }
+.text-accent-dark,
+html:not(.dark) .text-emerald-950 {
+  color: color-mix(in srgb, var(--accent-color) 35%, #022c22 65%) !important;
+}
 .bg-nav-light-theme { 
   background-color: var(--accent-color) !important; 
   border-top-color: rgba(255, 255, 255, 0.2) !important;
@@ -29,6 +33,41 @@
 .status-blue-bg { background-color: #2563eb !important; border-color: #1d4ed8 !important; }
 .status-amber-bg { background-color: #fbbf24 !important; border-color: #f59e0b !important; }
 .status-rose-bg { background-color: #e11d48 !important; border-color: #be123c !important; }
+
+/* Subtle Theme-Tinted Borders (Dark and Light Modes harmonize with --accent-color) */
+.dark .border-slate-800,
+.dark [class*="border-slate-800"],
+.border-slate-800,
+[class*="border-slate-800"] {
+  border-color: color-mix(in srgb, var(--accent-color) 18%, #1e293b 82%) !important;
+}
+
+.dark .border-slate-700,
+.dark [class*="border-slate-700"],
+.border-slate-700,
+[class*="border-slate-700"] {
+  border-color: color-mix(in srgb, var(--accent-color) 25%, #334155 75%) !important;
+}
+
+.dark .border-slate-900,
+.dark [class*="border-slate-900"] {
+  border-color: color-mix(in srgb, var(--accent-color) 15%, #0f172a 85%) !important;
+}
+
+html:not(.dark) .border-slate-200,
+html:not(.dark) [class*="border-slate-200"] {
+  border-color: color-mix(in srgb, var(--accent-color) 24%, #cbd5e1 76%) !important;
+}
+
+html:not(.dark) .border-slate-300,
+html:not(.dark) [class*="border-slate-300"] {
+  border-color: color-mix(in srgb, var(--accent-color) 28%, #94a3b8 72%) !important;
+}
+
+html:not(.dark) .border-slate-100,
+html:not(.dark) [class*="border-slate-100"] {
+  border-color: color-mix(in srgb, var(--accent-color) 16%, #e2e8f0 84%) !important;
+}
 
 /* Global overrides: Backgrounds, Borders and Rings use the theme's selected color */
 .bg-emerald-500, .bg-emerald-600, .bg-emerald-400, .bg-\[\#20C933\], [class*="bg-[#20C933]"] { background-color: var(--accent-color) !important; }

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { 
   Palette, Upload, Trash2, Smartphone, Image as ImageIcon,
-  Check, Sparkles, ArrowLeft, RefreshCw, Save
+  Check, Sparkles, ArrowLeft, Sun, Moon, RefreshCw, Save
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { SalonAdminSettings } from '../../types';
@@ -23,12 +23,14 @@ export const VisualIdentityCardView: React.FC<VisualIdentityCardViewProps> = ({
 
   const [salonName] = useState(adminSettings.salonName || 'Barbearia Rota 99');
   const [pwaName, setPwaName] = useState(adminSettings.pwaName || adminSettings.salonName || 'Barbearia Rota 99');
-  const [salonLogo, setSalonLogo] = useState(adminSettings.salonLogo || '');
+  const [salonLogoLight, setSalonLogoLight] = useState(adminSettings.salonLogoLight || adminSettings.salonLogo || '');
+  const [salonLogoDark, setSalonLogoDark] = useState(adminSettings.salonLogoDark || adminSettings.salonLogo || '');
   const [salonIcon, setSalonIcon] = useState(adminSettings.salonIcon || '');
   const [accentColor, setAccentColor] = useState(adminSettings.accentColor || '#10b981');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const logoLightInputRef = useRef<HTMLInputElement>(null);
+  const logoDarkInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
 
   const COLOR_PRESETS = [
@@ -39,13 +41,26 @@ export const VisualIdentityCardView: React.FC<VisualIdentityCardViewProps> = ({
     { label: 'Violeta', hex: '#8b5cf6' },
   ];
 
-  // Upload Logo Retangular
-  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Upload Logo Tema Claro
+  const handleLogoLightFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSalonLogo(reader.result as string);
+        setSalonLogoLight(reader.result as string);
+        hapticSuccess();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Upload Logo Tema Escuro
+  const handleLogoDarkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSalonLogoDark(reader.result as string);
         hapticSuccess();
       };
       reader.readAsDataURL(file);
@@ -65,13 +80,26 @@ export const VisualIdentityCardView: React.FC<VisualIdentityCardViewProps> = ({
     }
   };
 
-  const handleLogoDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleLogoLightDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSalonLogo(reader.result as string);
+        setSalonLogoLight(reader.result as string);
+        hapticSuccess();
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoDarkDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSalonLogoDark(reader.result as string);
         hapticSuccess();
       };
       reader.readAsDataURL(file);
@@ -96,7 +124,9 @@ export const VisualIdentityCardView: React.FC<VisualIdentityCardViewProps> = ({
     hapticSuccess();
 
     onUpdateSettings({
-      salonLogo,
+      salonLogo: isDark ? (salonLogoDark || salonLogoLight) : (salonLogoLight || salonLogoDark),
+      salonLogoLight,
+      salonLogoDark,
       salonIcon,
       accentColor,
       pwaName: pwaName.trim() || salonName,
@@ -204,117 +234,226 @@ export const VisualIdentityCardView: React.FC<VisualIdentityCardViewProps> = ({
           </div>
         </div>
 
-        {/* 2. LOGO DO CABEÇALHO (HORIZONTAL) */}
-        <div className={`p-3.5 rounded border space-y-3 ${
+        {/* 2. LOGOS DO CABEÇALHO (TEMA CLARO E TEMA ESCURO) */}
+        <div className={`p-3.5 rounded border space-y-3.5 ${
           isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
         }`}>
           <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
             <div className="flex items-center gap-2">
               <ImageIcon className="w-4 h-4 text-emerald-400" />
               <h3 className="text-xs font-bold uppercase tracking-wider font-['Poppins']">
-                Logo do Cabeçalho
+                Logos do Cabeçalho
               </h3>
             </div>
             <span className="text-[10px] text-slate-400 font-medium">
-              Horizontal (Topo do App)
+              2 Versões (Claro & Escuro)
             </span>
           </div>
 
           <p className="text-[11px] text-slate-400">
-            Exibido no topo de todas as telas. Formato ideal: PNG/SVG horizontal (~3:1 ou 4:1) com fundo transparente.
+            Envie as duas versões do seu logo horizontal (PNG/SVG com fundo transparente) para alternar automaticamente de acordo com o tema selecionado.
           </p>
 
-          {/* Prévia no Topo */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              <span>Prévia no Topo</span>
-              <span className="text-emerald-400 flex items-center gap-0.5">
-                <Sparkles className="w-2.5 h-2.5" /> Ao Vivo
-              </span>
-            </div>
-
-            <div className={`h-11 rounded border px-3 flex items-center justify-between overflow-hidden ${
-              isDark ? 'bg-[#151A1E] border-slate-800' : 'bg-slate-100 border-slate-200'
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            
+            {/* 2.1 Logo para Tema Claro */}
+            <div className={`p-3 rounded border flex flex-col justify-between gap-2.5 ${
+              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50/90 border-slate-200'
             }`}>
-              <div className="h-full flex items-center max-w-[180px] overflow-hidden">
-                {salonLogo ? (
-                  <img 
-                    src={salonLogo} 
-                    alt="Logo Cabeçalho" 
-                    className="max-h-7 w-auto object-contain object-left" 
-                  />
-                ) : (
-                  <span className={`text-xs font-black uppercase tracking-tight truncate ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    <span className="text-emerald-500">{salonName.split(' ')[0]}</span>{' '}
-                    {salonName.split(' ').slice(1).join(' ')}
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/40">
+                <div className="flex items-center gap-1.5">
+                  <Sun className="w-3.5 h-3.5 text-amber-500" />
+                  <span className={`text-[11px] font-bold uppercase tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Logo Tema Claro
                   </span>
-                )}
+                </div>
+                <span className="text-[8.5px] px-1.5 py-0.5 rounded font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                  Fundo Claro
+                </span>
               </div>
 
-              <div className="flex items-center gap-1.5 opacity-60 text-[10px] text-slate-400">
-                <span>Cliente</span>
-                <span className="w-1 h-1 rounded-full bg-emerald-400" />
-                <span>🔔</span>
-              </div>
-            </div>
-          </div>
+              {/* Prévia Fundo Claro */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-wider text-slate-400">
+                  <span>Prévia no Topo Claro</span>
+                  <span className="text-emerald-500 flex items-center gap-0.5">
+                    <Sparkles className="w-2 h-2" /> Ao Vivo
+                  </span>
+                </div>
 
-          {/* Upload Dropzone */}
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleLogoDrop}
-            className={`p-3 rounded border border-dashed flex items-center justify-between gap-2 transition ${
-              isDark ? 'border-slate-700 bg-slate-950/40 hover:border-emerald-500' : 'border-slate-300 bg-slate-50 hover:border-emerald-500'
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                <ImageIcon className="w-4 h-4" />
+                <div className="h-10 rounded border border-slate-200 bg-white px-3 flex items-center justify-between overflow-hidden shadow-2xs">
+                  <div className="h-full flex items-center max-w-[160px] overflow-hidden">
+                    {salonLogoLight ? (
+                      <img 
+                        src={salonLogoLight} 
+                        alt="Logo Tema Claro" 
+                        className="max-h-6.5 w-auto object-contain object-left" 
+                      />
+                    ) : (
+                      <span className="text-xs font-black uppercase tracking-tight truncate text-slate-900">
+                        <span className="text-emerald-600">{salonName.split(' ')[0]}</span>{' '}
+                        {salonName.split(' ').slice(1).join(' ')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-50 text-[9px] text-slate-500">
+                    <span>Cliente</span>
+                    <span className="w-1 h-1 rounded-full bg-emerald-500" />
+                  </div>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold truncate">
-                  {salonLogo ? 'Logo horizontal ativo' : 'Nenhum logo enviado'}
-                </p>
-                <p className="text-[9.5px] text-slate-400 truncate">
-                  {salonLogo ? 'Substitua ou remova abaixo' : 'Arraste a imagem ou toque para enviar'}
-                </p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                className="py-1.5 px-3 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-xs"
+              {/* Dropzone / Upload Claro */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleLogoLightDrop}
+                className={`p-2.5 rounded border border-dashed flex items-center justify-between gap-2 transition ${
+                  isDark ? 'border-slate-700 bg-slate-900/40 hover:border-amber-500' : 'border-slate-300 bg-white hover:border-amber-500'
+                }`}
               >
-                <Upload className="w-3 h-3 text-white" />
-                <span>{salonLogo ? 'Substituir' : 'Enviar'}</span>
-              </button>
+                <div className="min-w-0">
+                  <p className={`text-[10px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {salonLogoLight ? 'Logo claro ativo' : 'Nenhum logo enviado'}
+                  </p>
+                  <p className="text-[9px] text-slate-400 truncate">
+                    {salonLogoLight ? 'Toque para substituir' : 'Traços e escrita escura'}
+                  </p>
+                </div>
 
-              {salonLogo && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    hapticLight();
-                    setSalonLogo('');
-                  }}
-                  className="p-1.5 rounded text-rose-400 hover:bg-rose-500/10 border border-slate-700 transition cursor-pointer"
-                  title="Remover logo do cabeçalho"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              )}
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => logoLightInputRef.current?.click()}
+                    className="py-1 px-2.5 rounded bg-amber-500 hover:bg-amber-600 text-white text-[9.5px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Upload className="w-3 h-3 text-white" />
+                    <span>{salonLogoLight ? 'Substituir' : 'Enviar'}</span>
+                  </button>
+
+                  {salonLogoLight && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticLight();
+                        setSalonLogoLight('');
+                      }}
+                      className="p-1 rounded text-rose-400 hover:bg-rose-500/10 border border-slate-700 transition cursor-pointer"
+                      title="Remover logo do tema claro"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <input 
+                  ref={logoLightInputRef}
+                  type="file" 
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp" 
+                  className="hidden" 
+                  onChange={handleLogoLightFileChange} 
+                />
+              </div>
             </div>
 
-            <input 
-              ref={logoInputRef}
-              type="file" 
-              accept="image/png,image/jpeg,image/svg+xml,image/webp" 
-              className="hidden" 
-              onChange={handleLogoFileChange} 
-            />
+            {/* 2.2 Logo para Tema Escuro */}
+            <div className={`p-3 rounded border flex flex-col justify-between gap-2.5 ${
+              isDark ? 'bg-slate-950/60 border-slate-800' : 'bg-slate-50/90 border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-800/40">
+                <div className="flex items-center gap-1.5">
+                  <Moon className="w-3.5 h-3.5 text-blue-400" />
+                  <span className={`text-[11px] font-bold uppercase tracking-wide ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Logo Tema Escuro
+                  </span>
+                </div>
+                <span className="text-[8.5px] px-1.5 py-0.5 rounded font-bold bg-blue-500/15 text-blue-500 dark:text-blue-400 border border-blue-500/30">
+                  Fundo Escuro
+                </span>
+              </div>
+
+              {/* Prévia Fundo Escuro */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[8.5px] font-bold uppercase tracking-wider text-slate-400">
+                  <span>Prévia no Topo Escuro</span>
+                  <span className="text-emerald-400 flex items-center gap-0.5">
+                    <Sparkles className="w-2 h-2" /> Ao Vivo
+                  </span>
+                </div>
+
+                <div className="h-10 rounded border border-slate-800 bg-[#151A1E] px-3 flex items-center justify-between overflow-hidden shadow-2xs">
+                  <div className="h-full flex items-center max-w-[160px] overflow-hidden">
+                    {salonLogoDark ? (
+                      <img 
+                        src={salonLogoDark} 
+                        alt="Logo Tema Escuro" 
+                        className="max-h-6.5 w-auto object-contain object-left" 
+                      />
+                    ) : (
+                      <span className="text-xs font-black uppercase tracking-tight truncate text-white">
+                        <span className="text-emerald-500">{salonName.split(' ')[0]}</span>{' '}
+                        {salonName.split(' ').slice(1).join(' ')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 opacity-50 text-[9px] text-slate-400">
+                    <span>Cliente</span>
+                    <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dropzone / Upload Escuro */}
+              <div
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleLogoDarkDrop}
+                className={`p-2.5 rounded border border-dashed flex items-center justify-between gap-2 transition ${
+                  isDark ? 'border-slate-700 bg-slate-900/40 hover:border-blue-500' : 'border-slate-300 bg-white hover:border-blue-500'
+                }`}
+              >
+                <div className="min-w-0">
+                  <p className={`text-[10px] font-bold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {salonLogoDark ? 'Logo escuro ativo' : 'Nenhum logo enviado'}
+                  </p>
+                  <p className="text-[9px] text-slate-400 truncate">
+                    {salonLogoDark ? 'Toque para substituir' : 'Traços e escrita clara/branca'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => logoDarkInputRef.current?.click()}
+                    className="py-1 px-2.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[9.5px] font-bold uppercase tracking-wider transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Upload className="w-3 h-3 text-white" />
+                    <span>{salonLogoDark ? 'Substituir' : 'Enviar'}</span>
+                  </button>
+
+                  {salonLogoDark && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hapticLight();
+                        setSalonLogoDark('');
+                      }}
+                      className="p-1 rounded text-rose-400 hover:bg-rose-500/10 border border-slate-700 transition cursor-pointer"
+                      title="Remover logo do tema escuro"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                <input 
+                  ref={logoDarkInputRef}
+                  type="file" 
+                  accept="image/png,image/jpeg,image/svg+xml,image/webp" 
+                  className="hidden" 
+                  onChange={handleLogoDarkFileChange} 
+                />
+              </div>
+            </div>
+
           </div>
         </div>
 
