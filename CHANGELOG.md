@@ -15,6 +15,21 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
+### [2026-09-22] — Transição Suave entre Visualizações (Salão, Agenda e Dashboard)
+- **Tipo:** `[UI / UX Animation / Motion]`
+- **Motivo / Solicitação:** Adicionar uma animação de transição suave quando o usuário alternar entre as visualizações de 'salon', 'agenda' e 'dashboard' no componente principal.
+- **Implementações Realizadas:**
+  - `App.tsx`:
+    - Integrado `AnimatePresence` e `motion.div` em torno do renderizador de telas do container principal `<main>`.
+    - Configurado `mode="wait"` e `initial={false}` para evitar flash na carga inicial e prevenir qualquer sobreposição de layout ou salto de scroll entre as telas.
+    - Criado preset `VIEW_TRANSITION_VARIANTS` com transição elegante de fade e deslocamento vertical sutil (`ease: [0.16, 1, 0.3, 1]`, entrada de 220ms e saída de 140ms).
+- **Arquivos Impactados:**
+  - `src/App.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: 100% aprovado.
+
 ### [2026-09-22] — Catálogo de Concessionárias de Energia (ANEEL) e Saneamento para os 27 Estados do Brasil
 - **Tipo:** `[Feat / Brazilian Regulatory Data / All-State Coverage]`
 - **Motivo / Solicitação:** Permitir que estabelecimentos de qualquer um dos 26 estados brasileiros + DF selecionem seu estado e a concessionária correspondente na lista, carregando automaticamente as tarifas vigentes.

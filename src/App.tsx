@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { SalonProfileView } from './components/SalonProfileView';
 import { UserAppointmentsView } from './components/UserAppointmentsView';
 import { UserDashboard } from './components/UserDashboard';
@@ -178,6 +179,32 @@ const INITIAL_SALON_OFFERS: ServiceOffer[] = [
     description: 'Pacote completo de cuidados masculinos com produtos importados e cerveja cortesia.',
   }
 ];
+
+const VIEW_TRANSITION_VARIANTS = {
+  initial: {
+    opacity: 0,
+    y: 8,
+    scale: 0.995,
+  },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.22,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -6,
+    scale: 0.995,
+    transition: {
+      duration: 0.14,
+      ease: [0.4, 0, 1, 1],
+    },
+  },
+};
 
 export const App: React.FC = () => {
   const { isDark, accentColor } = useTheme();
@@ -439,37 +466,48 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Contêiner Principal da Página do Estabelecimento */}
+        {/* Contêiner Principal da Página do Estabelecimento com Transição Suave entre Telas */}
         <main className="flex-1 w-full min-h-0 overflow-hidden relative">
-          {viewMode === 'salon' ? (
-            <SalonProfileView
-              salonName="Barbearia Rota 99"
-              offers={INITIAL_SALON_OFFERS}
-              onDirectBook={(offer) => {
-                console.log('Agendamento realizado:', offer);
-              }}
-              isFavorite={isFavorite}
-              onToggleFavorite={handleToggleFavorite}
-              userName={userName}
-              userAvatarUrl={userAvatarUrl}
-              onNavigateToUserAppointments={handleNavigateToAgenda}
-              onNavigateToUserDashboard={() => setViewMode('dashboard')}
-            />
-          ) : viewMode === 'agenda' ? (
-            <UserAppointmentsView
-              appointments={appointments}
-              onBack={() => setViewMode('salon')}
-              onCancelAppointment={handleCancelAppointment}
-            />
-          ) : (
-            <UserDashboard
-              onBack={() => setViewMode('salon')}
-              onUpdateProfile={(newName, newAvatar) => {
-                setUserName(newName);
-                setUserAvatarUrl(newAvatar);
-              }}
-            />
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={viewMode}
+              variants={VIEW_TRANSITION_VARIANTS}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="w-full h-full flex flex-col min-h-0 overflow-hidden"
+            >
+              {viewMode === 'salon' ? (
+                <SalonProfileView
+                  salonName="Barbearia Rota 99"
+                  offers={INITIAL_SALON_OFFERS}
+                  onDirectBook={(offer) => {
+                    console.log('Agendamento realizado:', offer);
+                  }}
+                  isFavorite={isFavorite}
+                  onToggleFavorite={handleToggleFavorite}
+                  userName={userName}
+                  userAvatarUrl={userAvatarUrl}
+                  onNavigateToUserAppointments={handleNavigateToAgenda}
+                  onNavigateToUserDashboard={() => setViewMode('dashboard')}
+                />
+              ) : viewMode === 'agenda' ? (
+                <UserAppointmentsView
+                  appointments={appointments}
+                  onBack={() => setViewMode('salon')}
+                  onCancelAppointment={handleCancelAppointment}
+                />
+              ) : (
+                <UserDashboard
+                  onBack={() => setViewMode('salon')}
+                  onUpdateProfile={(newName, newAvatar) => {
+                    setUserName(newName);
+                    setUserAvatarUrl(newAvatar);
+                  }}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>
