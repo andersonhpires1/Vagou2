@@ -15,6 +15,98 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
+### [2026-09-22] — Simplificação dos Cards de Consumo, Composição Tarifária ANEEL e Previsão de Contas
+- **Tipo:** `[Feat / UI Simplification / Brazilian Tariff Engine]`
+- **Motivo / Solicitação:** 
+  1. Simplificar os 4 cards de consumo para exibir estritamente: "Energia Elétrica", "Água", "Operação" e "Infraestrutura", removendo qualquer enfeite, subtítulo longo ou badge desnecessário.
+  2. Implementar motor de pré-configuração tarifária com a composição real das faturas brasileiras (pesquisa regulatória ANEEL):
+     - Tarifa TE (Energia/Geração) + Tarifa TUSD (Distribuição/Uso do Sistema) + Bandeira Tarifária (Verde, Amarela, Vermelha 1 e 2).
+     - Tributos calculados por dentro (ICMS estadual + PIS/COFINS federal).
+     - Taxa de Iluminação Pública Municipal (COSIP/CIP).
+  3. Previsão da conta de luz em tempo real ao preencher o número atual do medidor com base nos dias decorridos do ciclo de 30 dias.
+  4. Pré-configuração da conta de água (tarifa por m³, taxa de esgoto %, taxa fixa de disponibilidade e consumo médio por lavatório).
+  5. Campo editável de consumo por hora (kWh/h) e horas de uso diário em cada equipamento (secadores, micro-ondas, refrigeradores, ar-condicionado, etc.), com cálculo do custo/hora e impacto mensal na fatura.
+- **Implementações Realizadas:**
+  - `UtilitiesAndToolsView.tsx`: Cards de consumo simplificados para cards quadrados limpos com ícone centrado e título único objetivo ("Energia Elétrica", "Água", "Operação", "Infraestrutura").
+  - `consumptionTypes.ts`: Adicionadas interfaces `EnergyTariffConfig`, `WaterTariffConfig` e campos `kwhPerHour` e `avgHoursPerDay` nos equipamentos.
+  - `EnergyMeterManager.tsx`: Pré-configuração de tarifa (com presets Enel SP, CPFL, Cemig, Light), simulador de previsão ao digitar o relógio atual, memória de cálculo transparente e controle de consumo por hora de equipamentos.
+  - `WaterConsumptionManager.tsx`: Pré-configuração de água/saneamento (Sabesp, Sanepar, Copasa, Cedae), simulador de hidrômetro atual e previsão de fatura.
+  - `OperationalEquipmentsManager.tsx` & `InfrastructureEquipmentsManager.tsx`: Campos de ajuste inline de consumo por hora (kWh/h) e horas de uso diário.
+- **Arquivos Impactados:**
+  - `src/components/professional/UtilitiesAndToolsView.tsx`
+  - `src/components/professional/consumption/consumptionTypes.ts`
+  - `src/components/professional/consumption/EnergyMeterManager.tsx`
+  - `src/components/professional/consumption/WaterConsumptionManager.tsx`
+  - `src/components/professional/consumption/OperationalEquipmentsManager.tsx`
+  - `src/components/professional/consumption/InfrastructureEquipmentsManager.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-22] — Arquitetura de Gerenciamento de Consumo com Sub-Hub e Ferramentas Especializadas
+- **Tipo:** `[Feat / Architecture / Clean Code / Mobile UX]`
+- **Motivo / Solicitação:** Integrar a estrutura hierárquica solicitada para a seção Utilidades: o card "Gerenciamento de Consumo" atua como porta de entrada secundária. Dentro dele, há 4 cards quadrados lado a lado:
+  1. *Energia Elétrica*: Registro do relógio do último mês com lista de histórico e cálculo de consumo.
+  2. *Água (Consumo Básico)*: Controle de leitura do hidrômetro em m³ e faturas mensais.
+  3. *Equipamentos Operacionais*: Cadastro e gestão de secadores, lavatórios, máquinas de corte e bancada.
+  4. *Equipamentos de Infraestrutura*: Micro-ondas da copa, geladeiras, cafeteiras, ar-condicionado e suporte à equipe.
+- **Implementações Realizadas:**
+  - **Portal de Consumo (`consumo_hub`):** Implementado sub-hub visual com cards quadrados (`aspect-square`), badges contrastantes e ícones temáticos (`Zap`, `Droplets`, `Wrench`, `Building2`).
+  - **Componentes Especializados:**
+    - `EnergyMeterManager.tsx`: Medição do relógio de energia, cálculo de kWh, valor do kWh, histórico persistente em `localStorage`.
+    - `WaterConsumptionManager.tsx`: Medição do hidrômetro em m³, histórico de contas de água e alertas de vazamento.
+    - `OperationalEquipmentsManager.tsx`: Gestão de equipamentos operacionais (potência, voltagem, manutenção).
+    - `InfrastructureEquipmentsManager.tsx`: Gestão de infraestrutura de equipe (copa, refrigeração, climatização).
+  - **Navegação & Breadcrumbs:** Sistema de navegação com botão voltar hierárquico (retorna para o sub-hub de consumo a partir de uma ferramenta de consumo, ou para o hub principal a partir do sub-hub).
+  - **Protocolo Clean Code & Anti-Slop:** Sem poluição visual, fundo verde com texto branco (`text-white`), ícones exclusivos do `lucide-react` e tipografia de alto contraste.
+- **Arquivos Impactados:**
+  - `src/components/professional/UtilitiesAndToolsView.tsx`
+  - `src/components/professional/consumption/consumptionTypes.ts`
+  - `src/components/professional/consumption/EnergyMeterManager.tsx`
+  - `src/components/professional/consumption/WaterConsumptionManager.tsx`
+  - `src/components/professional/consumption/OperationalEquipmentsManager.tsx`
+  - `src/components/professional/consumption/InfrastructureEquipmentsManager.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado (sem erros de tipagem TypeScript ou sintaxe).
+  - `compile_applet`: Build de produção executado com sucesso.
+
+### [2026-09-22] — Remoção das Opções de Timer e Balança Química da Seção Utilidades
+- **Tipo:** `[Refactor / Clean Code / UI Simplification]`
+- **Motivo / Solicitação:** Remover a opção de timer e balança química da ferramenta Cadastro de Equipamentos / Utilidades, mantendo o foco exclusivo no patrimônio, voltagens e revisão das máquinas operacionais.
+- **Implementações Realizadas:**
+  - **Limpeza de UI & Módulos:** Removidos o alternador de abas internas (`Equipamentos` vs `Timer & Balança`), o cronômetro de pausa química com presets de tempo e a calculadora de proporção de massa/oxidante (balança).
+  - **Exibição Direta & Limpa:** A ferramenta **Cadastro de Equipamentos** agora abre diretamente com a lista de equipamentos cadastrados e o formulário de novo item, sem camadas ou bifurcações desnecessárias.
+  - **Protocolo Clean Code (Pós-Obra):** Removidos estados zumbis (`timerSeconds`, `isTimerRunning`, `colorMassGrams`, `ratioMultiplier`, `oxVolume`, `bancadaTab`), temporizadores de intervalo e ícones não utilizados (`Timer`, `Play`, `Pause`, `RotateCcw`, `Calculator`, `CheckCircle2`), garantindo código enxuto e zero poluição.
+  - **Card do Hub Atualizado:** Atualizada a descrição do card no Hub para "Patrimônio, voltagem e revisão das máquinas".
+- **Arquivos Impactados:**
+  - `src/components/professional/UtilitiesAndToolsView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado (sem erros de TypeScript ou sintaxe).
+  - `compile_applet`: Compilação de produção executada com sucesso.
+
+### [2026-09-22] — Nova Porta de Entrada da Seção Utilidades (Hub com Cards Quadrados)
+- **Tipo:** `[Feat / UI / Refactor / Mobile Architecture]`
+- **Motivo / Solicitação:** Transformar a seção Utilidades (ao clicar no ícone do Nav) em uma porta de entrada para as ferramentas operacionais, contendo cards em formato quadrado posicionados lado a lado (Financeiro, Cadastro de Equipamentos, Energia Elétrica, Insumos & Estoque).
+- **Implementações Realizadas:**
+  - **Porta de Entrada (Hub Central):** Criada grade responsiva (`grid-cols-2 md:grid-cols-4`) com cards de proporção quadrada (`aspect-square`), ícone centralizado ampliado, badge de identificação e títulos objetivos.
+  - **Cards Mapeados:**
+    1. *Financeiro*: Acesso direto à gestão financeira, DRE, despesas, balanço e comissões.
+    2. *Cadastro de Equipamentos*: Módulo de patrimônio, voltagem (110V/220V/Bivolt), potência (W), última revisão, além de ferramentas químicas (timer e balança).
+    3. *Energia Elétrica*: Auditoria de consumo de energia e água, custos fixos e eficiência.
+    4. *Insumos & Estoque*: Previsão de suprimentos por agendamento e controle de almoxarifado.
+  - **Navegação & UX:** Botão de retorno direto ao Hub a partir de qualquer subferramenta (`setActiveSubTab('hub')`) e retorno fluido ao Painel via `onBack`.
+  - **Contraste & Diretrizes:** Respeito absoluto à regra de fundo verde com texto branco (`text-white`), tipografia de alto contraste, sem aninhamento redundante de caixas ("box-inside-box").
+- **Arquivos Impactados:**
+  - `src/components/professional/UtilitiesAndToolsView.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado (sem erros de TypeScript ou sintaxe).
+  - `compile_applet`: Compilação de produção executada com sucesso.
+
 ### [2026-09-21] — Reversão e Limpeza Total na Seção Caixa (CaixaManagerView)
 - **Tipo:** `[Revert / Clean Code / UI Reset]`
 - **Motivo / Solicitação:** Remover a div e componentes recém-inseridos na seção Caixa, restaurando a tela ao estado limpo com o painel de Caixa do dia e da semana (`CaixaDailyWeeklyCard`).

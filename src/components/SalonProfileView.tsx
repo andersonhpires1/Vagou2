@@ -1552,7 +1552,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                 isOwner={isActiveProAdmin}
                 salonName={salonInfo.name}
                 currentPersona={currentPersona}
-                initialSubTab="financeiro"
+                initialSubTab="hub"
                 onUpdateAppointments={handleUpdateAppointments}
                 onBack={() => handleSelectTab('home')}
               />
