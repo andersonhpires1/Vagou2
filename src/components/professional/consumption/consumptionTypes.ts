@@ -1,5 +1,6 @@
 export interface EnergyTariffConfig {
   concessionaria: string;
+  uf?: string;
   teRate: number; // Tarifa de Energia (R$/kWh) - Geração
   tusdRate: number; // Tarifa de Uso do Sistema de Distribuição (R$/kWh)
   flagType: 'Verde' | 'Amarela' | 'Vermelha 1' | 'Vermelha 2';
@@ -11,6 +12,7 @@ export interface EnergyTariffConfig {
 
 export interface WaterTariffConfig {
   concessionaria: string;
+  uf?: string;
   waterRateM3: number; // Tarifa de Água (R$/m³)
   sewagePercent: number; // Esgoto (% sobre o valor da água, ex: 80% ou 100%)
   fixedAvailability: number; // Taxa mínima de ligação / disponibilidade (R$)

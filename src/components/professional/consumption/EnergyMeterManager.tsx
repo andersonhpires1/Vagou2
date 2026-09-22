@@ -15,9 +15,11 @@ import {
 import { useTheme } from '../../../context/ThemeContext';
 import { hapticLight, hapticSuccess } from '../../../utils/haptics';
 import { EnergyReading, EnergyTariffConfig } from './consumptionTypes';
+import { BRAZILIAN_STATES, ENERGY_DISTRIBUTORS } from './concessionariasData';
 
 export const DEFAULT_ENERGY_TARIFF: EnergyTariffConfig = {
-  concessionaria: 'Enel SP (Padrão)',
+  concessionaria: 'Enel Distribuição São Paulo',
+  uf: 'SP',
   teRate: 0.342, // R$/kWh Geração
   tusdRate: 0.448, // R$/kWh Distribuição
   flagType: 'Verde',
@@ -98,6 +100,12 @@ export const EnergyMeterManager: React.FC = () => {
     }
     return DEFAULT_ENERGY_TARIFF;
   });
+
+  const [selectedUf, setSelectedUf] = useState<string>(() => tariff.uf || 'SP');
+
+  const distributorsForUf = useMemo(() => {
+    return ENERGY_DISTRIBUTORS.filter((d) => d.uf === selectedUf);
+  }, [selectedUf]);
 
   const handleSaveTariff = (updated: EnergyTariffConfig) => {
     setTariff(updated);
@@ -532,41 +540,98 @@ export const EnergyMeterManager: React.FC = () => {
             </p>
           </div>
 
-          {/* Presets Rápidos de Distribuidora */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase mb-1.5 text-slate-400">
-              Concessionária / Modelo Pré-definido:
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-              {[
-                { name: 'Enel SP', te: 0.342, tusd: 0.448, icms: 18, pis: 5.4, cosip: 32.5 },
-                { name: 'CPFL Paulista', te: 0.365, tusd: 0.462, icms: 18, pis: 5.8, cosip: 28.0 },
-                { name: 'Cemig MG', te: 0.380, tusd: 0.490, icms: 18, pis: 5.5, cosip: 35.0 },
-                { name: 'Light RJ', te: 0.395, tusd: 0.520, icms: 20, pis: 6.0, cosip: 38.0 },
-              ].map((c) => (
-                <button
-                  key={c.name}
-                  type="button"
-                  onClick={() => {
-                    handleSaveTariff({
-                      ...tariff,
-                      concessionaria: c.name,
-                      teRate: c.te,
-                      tusdRate: c.tusd,
-                      icmsPercent: c.icms,
-                      pisCofinsPercent: c.pis,
-                      cosipFixed: c.cosip,
-                    });
+          {/* Seleção de Estado (UF) e Distribuidora ANEEL de todos os estados */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold uppercase text-slate-400">
+                Selecione seu Estado e Concessionária (ANEEL):
+              </label>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                27 Estados Homologados
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Dropdown de Estados */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase mb-1 text-slate-400">
+                  Estado (UF)
+                </label>
+                <select
+                  value={selectedUf}
+                  onChange={(e) => {
+                    const newUf = e.target.value;
+                    setSelectedUf(newUf);
+                    const firstDist = ENERGY_DISTRIBUTORS.find((d) => d.uf === newUf);
+                    if (firstDist) {
+                      handleSaveTariff({
+                        ...tariff,
+                        concessionaria: firstDist.name,
+                        uf: firstDist.uf,
+                        teRate: firstDist.teRate,
+                        tusdRate: firstDist.tusdRate,
+                        icmsPercent: firstDist.icmsPercent,
+                        cosipFixed: firstDist.cosipDefault,
+                      });
+                    }
                   }}
-                  className={`py-1.5 px-2 text-xs font-bold rounded-lg border transition cursor-pointer ${
-                    tariff.concessionaria === c.name
-                      ? 'bg-amber-500 text-white border-amber-400'
-                      : isDark ? 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800' : 'bg-slate-100 border-slate-200 text-slate-700'
+                  className={`w-full px-3 py-2 text-xs font-bold rounded-lg border outline-none ${
+                    isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-slate-50 border-slate-300 text-slate-900'
                   }`}
                 >
-                  {c.name}
-                </button>
-              ))}
+                  {BRAZILIAN_STATES.map((s) => (
+                    <option key={s.uf} value={s.uf}>
+                      {s.uf} — {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Dropdown de Distribuidora daquele Estado */}
+              <div>
+                <label className="block text-[9px] font-bold uppercase mb-1 text-slate-400">
+                  Concessionária Distribuidora
+                </label>
+                <select
+                  value={ENERGY_DISTRIBUTORS.find((d) => d.name === tariff.concessionaria && d.uf === selectedUf)?.id || distributorsForUf[0]?.id || ''}
+                  onChange={(e) => {
+                    const dist = ENERGY_DISTRIBUTORS.find((d) => d.id === e.target.value);
+                    if (dist) {
+                      hapticSuccess();
+                      handleSaveTariff({
+                        ...tariff,
+                        concessionaria: dist.name,
+                        uf: dist.uf,
+                        teRate: dist.teRate,
+                        tusdRate: dist.tusdRate,
+                        icmsPercent: dist.icmsPercent,
+                        cosipFixed: dist.cosipDefault,
+                      });
+                    }
+                  }}
+                  className={`w-full px-3 py-2 text-xs font-bold rounded-lg border outline-none ${
+                    isDark ? 'bg-slate-950 border-slate-700 text-amber-300' : 'bg-slate-50 border-slate-300 text-amber-800'
+                  }`}
+                >
+                  {distributorsForUf.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className={`p-2.5 rounded-lg border flex items-center justify-between text-[10px] ${
+              isDark ? 'bg-slate-950 border-amber-500/30 text-slate-300' : 'bg-amber-50 border-amber-200 text-slate-700'
+            }`}>
+              <span className="flex items-center gap-1.5 font-bold text-amber-400">
+                <Zap className="w-3.5 h-3.5" />
+                <span>{tariff.concessionaria}</span>
+              </span>
+              <span className="text-slate-400 font-mono text-[9.5px]">
+                Dados ANEEL • ICMS {tariff.icmsPercent}% • COSIP R$ {tariff.cosipFixed.toFixed(2)}
+              </span>
             </div>
           </div>
 

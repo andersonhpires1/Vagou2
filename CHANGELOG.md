@@ -15,6 +15,25 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
+### [2026-09-22] — Catálogo de Concessionárias de Energia (ANEEL) e Saneamento para os 27 Estados do Brasil
+- **Tipo:** `[Feat / Brazilian Regulatory Data / All-State Coverage]`
+- **Motivo / Solicitação:** Permitir que estabelecimentos de qualquer um dos 26 estados brasileiros + DF selecionem seu estado e a concessionária correspondente na lista, carregando automaticamente as tarifas vigentes.
+- **Implementações Realizadas:**
+  - `concessionariasData.ts`: Criada base de dados abrangente de todas as 27 Unidades Federativas do Brasil:
+    - **Energia Elétrica (Distribuidoras ANEEL):** Enel SP, CPFL Paulista, CPFL Piratininga, EDP SP, Elektro, Light RJ, Enel RJ, Cemig MG, RGE RS, CEEE Equatorial, Copel PR, Celesc SC, Neoenergia Coelba BA, Neoenergia Pernambuco, Enel CE, Equatorial Goiás, Neoenergia Brasília, EDP ES, Energisa MT, Energisa MS, Equatorial PA, Amazonas Energia, Equatorial MA, Neoenergia Cosern RN, Energisa PB, Equatorial AL, Energisa SE, Equatorial PI, Energisa TO, Energisa RO, Energisa AC, CEA Equatorial AP e Roraima Energia. Com tarifas médias homologadas de TE, TUSD, ICMS estadual e estimativa de COSIP.
+    - **Saneamento & Água:** Sabesp, Sanasa, DAE Jundiaí, Águas do Rio/Cedae, Iguá RJ, Copasa MG, Corsan RS, DMAE Poa, Sanepar PR, Casan SC, Embasa BA, Compesa PE, Cagece CE, Saneago GO, Caesb DF, Cesan ES, Águas Cuiabá, Sanesul MS, Cosanpa PA, Águas de Manaus, Caema MA, Caern RN, Cagepa PB, BRK Alagoas, Deso SE, Águas de Teresina, BRK Tocantins, Caerd RO, Saneacre AC, CSA Amapá e Caer Roraima.
+  - `EnergyMeterManager.tsx`: Integrado seletor duplo dinâmico (Estado UF + Concessionária ANEEL) na aba *Tarifa & Impostos*, com auto-preenchimento instantâneo e persistência permanente em `localStorage`.
+  - `WaterConsumptionManager.tsx`: Integrado seletor duplo dinâmico (Estado UF + Companhia de Saneamento) na aba *Tarifa & Saneamento*, preenchendo tarifas por m³, esgoto e taxa mínima.
+- **Arquivos Impactados:**
+  - `src/components/professional/consumption/concessionariasData.ts`
+  - `src/components/professional/consumption/consumptionTypes.ts`
+  - `src/components/professional/consumption/EnergyMeterManager.tsx`
+  - `src/components/professional/consumption/WaterConsumptionManager.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: 100% aprovado.
+
 ### [2026-09-22] — Simplificação dos Cards de Consumo, Composição Tarifária ANEEL e Previsão de Contas
 - **Tipo:** `[Feat / UI Simplification / Brazilian Tariff Engine]`
 - **Motivo / Solicitação:** 
