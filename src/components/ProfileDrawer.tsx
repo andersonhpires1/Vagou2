@@ -3,7 +3,7 @@ import {
   X, User, Mail, Phone, MapPin, Calendar, Clock, 
   Check, Moon, Sun, MessageCircle, MessageSquare, Send, ShieldCheck, 
   ChevronRight, ArrowRight, Sparkles, CheckCircle2, 
-  Scissors, LayoutDashboard, Store, LogOut, Users, DollarSign, Wrench,
+  Scissors, LayoutDashboard, Store, LogOut, Users, DollarSign, Wrench, Wallet,
   ArrowLeftRight, AlertCircle, RotateCcw, Timer, Ban, HelpCircle, Info, Layers
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
@@ -17,7 +17,7 @@ interface ProfileDrawerProps {
   userAvatarUrl?: string;
   onUpdateUserName?: (name: string) => void;
   onNavigateToSchedule?: () => void;
-  onNavigateTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
+  onNavigateTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades') => void;
   salonName?: string;
   salonPhone?: string;
   isSalonLoggedIn?: boolean;
@@ -892,16 +892,16 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
 
               {/* LISTA DE OPÇÕES DO MENU */}
               <div className="space-y-2">
-                {/* MODO PRO - ADMINISTRADOR: Caixa + Agenda */}
+                {/* MODO PRO - ADMINISTRADOR: Caixa + Agenda + Financeiro */}
                 {currentPersona !== 'cliente' && isProAdmin && (
                   <>
                     <button
                       type="button"
-                      id="menu-option-financeiro"
+                      id="menu-option-caixa"
                       onClick={() => {
                         hapticLight();
                         onClose();
-                        onNavigateTab?.('financeiro');
+                        onNavigateTab?.('caixa');
                       }}
                       className={`w-full p-3.5 rounded border flex items-center justify-between text-left transition active:scale-[0.99] cursor-pointer ${
                         isDark 
@@ -911,12 +911,12 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                          <DollarSign className="w-4 h-4" />
+                          <Wallet className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="text-xs font-bold font-['Poppins']">Caixa & Financeiro</div>
+                          <div className="text-xs font-bold font-['Poppins']">Caixa (Dia & Semana)</div>
                           <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            Fechamento de caixa e comissões da equipe
+                            Entradas de hoje, métodos de pagamento e metas
                           </div>
                         </div>
                       </div>
@@ -953,9 +953,37 @@ export const ProfileDrawer: React.FC<ProfileDrawerProps> = ({
                   </>
                 )}
 
-                {/* MODO PRO - MEMBRO / PROFISSIONAL: Apenas Agenda e Comissões Próprias (Sem Gerenciar) */}
+                {/* MODO PRO - MEMBRO / PROFISSIONAL: Apenas Caixa, Agenda e Comissões Próprias */}
                 {currentPersona !== 'cliente' && !isProAdmin && (
                   <>
+                    <button
+                      type="button"
+                      id="menu-option-caixa-pro"
+                      onClick={() => {
+                        hapticLight();
+                        onClose();
+                        onNavigateTab?.('caixa');
+                      }}
+                      className={`w-full p-3.5 rounded border flex items-center justify-between text-left transition active:scale-[0.99] cursor-pointer ${
+                        isDark 
+                          ? 'bg-slate-900 hover:bg-slate-850 border-slate-800 text-white' 
+                          : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-900 shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                          <Wallet className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold font-['Poppins']">Caixa (Dia & Semana)</div>
+                          <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            Suas entradas e metas da cadeira
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                    </button>
+
                     <button
                       type="button"
                       id="menu-option-agenda"

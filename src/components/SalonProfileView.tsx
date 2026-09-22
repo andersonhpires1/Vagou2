@@ -17,6 +17,7 @@ import { ProfessionalAgendaView } from './professional/ProfessionalAgendaView';
 import { ProfessionalSpaceManager } from './professional/ProfessionalSpaceManager';
 import { TeamManager } from './professional/TeamManager';
 import { FinancialManagerView } from './professional/FinancialManagerView';
+import { CaixaManagerView } from './professional/CaixaManagerView';
 import { ProfessionalLoginModal } from './professional/ProfessionalLoginModal';
 import { SalonCustomizationHub } from './professional/SalonCustomizationHub';
 import { UtilitiesAndToolsView } from './professional/UtilitiesAndToolsView';
@@ -835,7 +836,7 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
     }
   }, [userName]);
 
-  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades'>('home');
   const [bookingService, setBookingService] = useState<CatalogServiceItem | null>(null);
   const [skipDateStep, setSkipDateStep] = useState<boolean>(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
@@ -1001,7 +1002,17 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
   }, [primaryOffer, salonName, salonOffers, offers]);
 
   // Navegação direta: no modo público rola para a seção; no modo gerenciamento alterna a aba diretamente
-  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => {
+  const handleSelectTab = useCallback((tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades') => {
+    if (tab === 'caixa') {
+      if (currentPersona === 'cliente') {
+        setCurrentPersona('admin');
+        setIsSalonLoggedIn(true);
+        setViewMode('ger');
+      }
+      setActiveTab('caixa');
+      return;
+    }
+
     if (tab === 'utilidades') {
       if (currentPersona === 'cliente') {
         setCurrentPersona('admin');
@@ -1495,13 +1506,39 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
             </div>
           )}
 
-          {activeTab === 'financeiro' && (
+          {activeTab === 'caixa' && (
             <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-start animate-in fade-in duration-150">
-              <FinancialManagerView
+              <CaixaManagerView
                 appointments={appointmentsList}
                 onUpdateAppointments={handleUpdateAppointments}
                 salonName={salonInfo.name}
                 currentPersona={currentPersona}
+                activeProId={activeProId}
+                matchesSelectedPro={(app) => {
+                  if (activeProId === 'all') return true;
+                  const activeMember = professionalsList.find(p => p.id === activeProId);
+                  const selectedName = activeMember ? activeMember.name : activeProId;
+                  const appProName = app.professionalName || app.professional || '';
+                  return !selectedName || selectedName === 'Todos' || appProName.toLowerCase().includes(selectedName.toLowerCase());
+                }}
+                onNavigateTab={handleSelectTab}
+                onBack={() => handleSelectTab('home')}
+              />
+            </div>
+          )}
+
+          {activeTab === 'financeiro' && (
+            <div className="w-full h-full flex-1 min-h-0 overflow-hidden flex flex-col justify-start animate-in fade-in duration-150">
+              <UtilitiesAndToolsView
+                appointments={appointmentsList}
+                services={catalogServicesList}
+                activeProId={activeProId}
+                isOwner={isActiveProAdmin}
+                salonName={salonInfo.name}
+                currentPersona={currentPersona}
+                initialSubTab="financeiro"
+                onUpdateAppointments={handleUpdateAppointments}
+                onBack={() => handleSelectTab('home')}
               />
             </div>
           )}
@@ -1513,6 +1550,10 @@ export const SalonProfileView: React.FC<SalonProfileViewProps> = ({
                 services={catalogServicesList}
                 activeProId={activeProId}
                 isOwner={isActiveProAdmin}
+                salonName={salonInfo.name}
+                currentPersona={currentPersona}
+                initialSubTab="financeiro"
+                onUpdateAppointments={handleUpdateAppointments}
                 onBack={() => handleSelectTab('home')}
               />
             </div>

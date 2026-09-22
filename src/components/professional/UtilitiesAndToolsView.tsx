@@ -12,13 +12,15 @@ import {
   Calculator,
   Flame,
   CheckCircle2,
-  Wrench
+  Wrench,
+  DollarSign
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { BookingAppointment, CatalogServiceItem } from '../../types';
+import { BookingAppointment, CatalogServiceItem, UserPersona } from '../../types';
 import { hapticLight, hapticSuccess, hapticMedium } from '../../utils/haptics';
 import { UtilitiesEfficiencySection } from './dashboard/UtilitiesEfficiencySection';
 import { ServicesAndSuppliesForecast } from './dashboard/ServicesAndSuppliesForecast';
+import { FinancialManagerView } from './FinancialManagerView';
 
 export interface UtilitiesAndToolsViewProps {
   appointments: BookingAppointment[];
@@ -26,6 +28,10 @@ export interface UtilitiesAndToolsViewProps {
   activeProId?: string;
   isOwner?: boolean;
   onBack?: () => void;
+  salonName?: string;
+  currentPersona?: UserPersona;
+  initialSubTab?: 'financeiro' | 'utilidades' | 'insumos' | 'bancada';
+  onUpdateAppointments?: (appointments: BookingAppointment[]) => void;
 }
 
 export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
@@ -34,11 +40,15 @@ export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
   activeProId,
   isOwner = true,
   onBack,
+  salonName = 'Barbearia Rota 99',
+  currentPersona = 'admin',
+  initialSubTab = 'financeiro',
+  onUpdateAppointments,
 }) => {
   const { isDark } = useTheme();
 
-  // Sub-abas da seção Utilidades: 'utilidades' (Água e Luz), 'insumos' (Previsão de Serviços e Almoxarifado), 'bancada' (Ferramentas)
-  const [activeSubTab, setActiveSubTab] = useState<'utilidades' | 'insumos' | 'bancada'>('utilidades');
+  // Sub-abas da seção Utilidades: 'financeiro' (Gestão Financeira & DRE), 'utilidades' (Água e Luz), 'insumos' (Previsão de Serviços e Almoxarifado), 'bancada' (Ferramentas)
+  const [activeSubTab, setActiveSubTab] = useState<'financeiro' | 'utilidades' | 'insumos' | 'bancada'>(initialSubTab);
 
   // Estados da Calculadora de Bancada (Proporção Química)
   const [colorMassGrams, setColorMassGrams] = useState<number>(60);
@@ -149,12 +159,30 @@ export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
           </div>
         </div>
 
-        {/* Alternador de Sub-Abas: Água & Luz | Insumos | Bancada */}
-        <div className={`flex items-center p-0.5 rounded border shrink-0 ${
+        {/* Alternador de Sub-Abas: Financeiro | Água & Luz | Insumos | Bancada */}
+        <div className={`flex items-center p-0.5 rounded border shrink-0 overflow-x-auto ${
           isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-100 border-slate-300 shadow-xs'
         }`}>
           <button
             type="button"
+            id="utilidades-subtab-financeiro"
+            onClick={() => {
+              hapticLight();
+              setActiveSubTab('financeiro');
+            }}
+            className={`px-2 py-1 text-[10px] font-bold rounded flex items-center gap-1 transition cursor-pointer whitespace-nowrap ${
+              activeSubTab === 'financeiro'
+                ? 'bg-emerald-500 text-white shadow-xs'
+                : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-950'
+            }`}
+          >
+            <DollarSign className="w-3 h-3" />
+            <span>Financeiro</span>
+          </button>
+
+          <button
+            type="button"
+            id="utilidades-subtab-agua-luz"
             onClick={() => {
               hapticLight();
               setActiveSubTab('utilidades');
@@ -171,6 +199,7 @@ export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
 
           <button
             type="button"
+            id="utilidades-subtab-insumos"
             onClick={() => {
               hapticLight();
               setActiveSubTab('insumos');
@@ -187,6 +216,7 @@ export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
 
           <button
             type="button"
+            id="utilidades-subtab-bancada"
             onClick={() => {
               hapticLight();
               setActiveSubTab('bancada');
@@ -205,6 +235,18 @@ export const UtilitiesAndToolsView: React.FC<UtilitiesAndToolsViewProps> = ({
 
       {/* 2. CORPO ROLÁVEL COM CONTEÚDO ESPECÍFICO */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+        {/* SUB-ABA 0: GESTÃO FINANCEIRA COMPLETA (Despesas, Balanço, DRE, Comissões) */}
+        {activeSubTab === 'financeiro' && (
+          <div className="animate-in fade-in duration-150">
+            <FinancialManagerView
+              appointments={appointments}
+              onUpdateAppointments={onUpdateAppointments}
+              salonName={salonName}
+              currentPersona={currentPersona}
+            />
+          </div>
+        )}
+
         {/* SUB-ABA 1: UTILIDADES & EFICIÊNCIA (Água, Luz e Auditoria de Rede) */}
         {activeSubTab === 'utilidades' && (
           <div className="animate-in fade-in duration-150 space-y-3">

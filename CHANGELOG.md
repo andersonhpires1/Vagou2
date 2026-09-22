@@ -15,6 +15,79 @@ Este arquivo registra cronologicamente todas as modificações relevantes realiz
 
 ## 📜 Registros de Alterações
 
+### [2026-09-21] — Reversão e Limpeza Total na Seção Caixa (CaixaManagerView)
+- **Tipo:** `[Revert / Clean Code / UI Reset]`
+- **Motivo / Solicitação:** Remover a div e componentes recém-inseridos na seção Caixa, restaurando a tela ao estado limpo com o painel de Caixa do dia e da semana (`CaixaDailyWeeklyCard`).
+- **Implementações Realizadas:**
+  - Removidos os cards de atendimento e o modal de recebimento em `CaixaManagerView.tsx`.
+  - Código limpo, sem estados ou imports zumbis.
+- **Arquivos Impactados:**
+  - `src/components/professional/CaixaManagerView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Remoção da Div "Metas & Turnos" da Seção Caixa (Focus Mode)
+- **Tipo:** `[Focus Mode / UI Clean / Clean Code]`
+- **Motivo / Solicitação:** Remoção da segunda div da tela de Caixa (`CaixaManagerView`), mantendo o foco exclusivo do Caixa no painel operacional de entradas e metas diárias/semanais (`CaixaDailyWeeklyCard`).
+- **Implementações Realizadas:**
+  - Removido o bloco de código e renderização de `GoalsAndShiftsCard` em `CaixaManagerView.tsx`.
+  - Limpeza completa de imports, estados e handlers auxiliares.
+- **Arquivos Impactados:**
+  - `src/components/professional/CaixaManagerView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: Build de produção compilado com sucesso.
+
+### [2026-09-21] — Inclusão do Botão da Seção "Caixa" na Barra de Navegação Inferior (BottomNav)
+- **Tipo:** `[Feat / UI / Navigation]`
+- **Motivo / Solicitação:** Adicionar o botão da seção "Caixa" na barra de navegação inferior (`BottomNav`) para acesso direto com 1 toque no modo profissional/administrador, substituindo o antigo botão de finanças genéricas.
+- **Implementações Realizadas:**
+  1. **Atualização da Barra Inferior (`BottomNav.tsx`):**
+     - Adicionado o item e botão **"Caixa"** com ícone `Wallet` da biblioteca `lucide-react`.
+     - Estrutura de navegação de 4 abas no modo profissional: `Painel` (`LayoutDashboard`), `Caixa` (`Wallet`), `Agenda` (`Calendar`) e `Utilidades` (`Wrench`).
+  2. **Criação da View Dedicada (`CaixaManagerView.tsx`):**
+     - Criada visualização autônoma de Caixa com cabeçalho limpo, botão de voltar ao painel e atalho direto para a gestão financeira profunda em Utilidades.
+     - Painel completo com alternador **Hoje / Semana**, cálculo dinâmico de entradas, metas com barra de progresso, projeção de fechamento, distribuição por método de pagamento (PIX, Cartão, Dinheiro) e evolução semanal.
+  3. **Sincronização no Orquestrador e Menu (`SalonProfileView.tsx` & `ProfileDrawer.tsx`):**
+     - Mapeada a aba `'caixa'` no `activeTab` e no `handleSelectTab`.
+     - Atualizados os menus do drawer lateral com opção direta para "Caixa (Dia & Semana)".
+- **Arquivos Impactados:**
+  - `src/components/BottomNav.tsx`
+  - `src/components/professional/CaixaManagerView.tsx`
+  - `src/components/SalonProfileView.tsx`
+  - `src/components/ProfileDrawer.tsx`
+  - `src/components/professional/ProfessionalDashboardView.tsx`
+  - `CHANGELOG.md`
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado.
+  - `compile_applet`: Build de produção validado com sucesso.
+
+### [2026-09-21] — Desmembramento do Financeiro para Utilidades & Criação da Seção "Caixa" (Dia e Semana)
+- **Tipo:** `[Refactor / Architecture / UI / Mobile Synthesis]`
+- **Motivo / Solicitação:** Desmembrar a seção financeira da tela de Início, tornando a gestão financeira completa (Despesas, Balanço, DRE, Comissões) acessível através do menu de opções em "Utilidades". Em seu lugar na tela Início, criar a seção dedicada **"Caixa"**, focada no caixa do dia e da semana em relação às entradas e metas.
+- **Implementações Realizadas:**
+  1. **Seção "Caixa" Operacional no Dashboard (`CaixaDailyWeeklyCard`):**
+     - **Caixa do Dia (Hoje):** Entradas realizadas (R$), quantidade de atendimentos concluídos, meta diária (R$), porcentagem de atingimento da meta, barra de progresso visual, previsão a receber (clientes agendados na fila), projeção total de fechamento e distribuição de entradas por método (PIX, Cartão, Dinheiro).
+     - **Caixa da Semana (7 dias):** Total de entradas acumuladas na semana (R$), meta semanal (R$), porcentagem da meta semanal, barra de progresso, gráfico de barras dos 7 dias da semana (com destaque para o dia atual) e ticket médio por cliente.
+     - **Atalho Rápido:** Link direto para acessar a gestão financeira completa em Utilidades.
+  2. **Módulo Financeiro Completo em Utilidades (`UtilitiesAndToolsView`):**
+     - Integrada a sub-aba **"Financeiro"** (`FinancialManagerView`) como módulo de destaque em "Utilidades & Ferramentas", ao lado de Água & Luz, Insumos & Previsão e Bancada.
+     - Sincronização de propriedades completas (`appointments`, `onUpdateAppointments`, `salonName`, `currentPersona`).
+  3. **Limpeza e Eliminação de Código Obsoleto:**
+     - Substituição do antigo "Resumo Financeiro" genérico pelo novo componente especializado `CaixaDailyWeeklyCard`.
+- **Arquivos Impactados:**
+  - `src/components/professional/dashboard/CaixaDailyWeeklyCard.tsx` (Criado)
+  - `src/components/professional/UtilitiesAndToolsView.tsx` (Atualizado)
+  - `src/components/professional/ProfessionalDashboardView.tsx` (Atualizado)
+  - `src/components/SalonProfileView.tsx` (Atualizado)
+  - `CHANGELOG.md` (Atualizado)
+- **Contraprova & Build:**
+  - `lint_applet`: 100% aprovado sem erros de tipagem ou sintaxe.
+  - `compile_applet`: Compilação de produção (`npm run build`) validada com sucesso.
+
 ### [2026-09-21] — Remoção de Badge de Duração nos Botões de Vagas Livres (Focus Mode)
 - **Tipo:** `[Focus Mode / UI Clean / Síntese Mobile]`
 - **Motivo / Solicitação:** Exclusão do segundo `span` (badge de duração como "30m", "45m") dentro dos botões de horários livres (`button#dashboard-free-slot-* > span:nth-of-type(2)`), sintetizando o botão exclusivamente para a exibição do horário limpo (`HH:mm`).

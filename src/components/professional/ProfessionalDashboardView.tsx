@@ -7,7 +7,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { SalonAdminSettings, CatalogServiceItem, BookingAppointment, SalonProfessionalItem, UserPersona } from '../../types';
 import { hapticLight, hapticSuccess, hapticMedium } from '../../utils/haptics';
 import { DayEvolutionData } from './dashboard/ClientEvolutionChart';
-import { QuickFinancialCards } from './dashboard/QuickFinancialCards';
+import { CaixaDailyWeeklyCard } from './dashboard/CaixaDailyWeeklyCard';
 import { GoalsAndShiftsCard } from './dashboard/GoalsAndShiftsCard';
 
 const WORK_DAY_START_MINUTES = 8 * 60; // 08:00
@@ -120,7 +120,7 @@ export interface ProfessionalDashboardViewProps {
   appointments?: BookingAppointment[];
   onUpdateAppointments?: (appointments: BookingAppointment[]) => void;
   professionals?: SalonProfessionalItem[];
-  onNavigateTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
+  onNavigateTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades') => void;
   onOpenNewService?: () => void;
   onOpenNewAppointment?: () => void;
   onLogout?: () => void;
@@ -1184,9 +1184,18 @@ export const ProfessionalDashboardView: React.FC<ProfessionalDashboardViewProps>
           </div>
         )}
 
-        {/* Itens de Dashboard & Metas (Posicionados abaixo da Fila & Atendimentos) */}
+        {/* Itens de Dashboard & Caixa Operacional (Posicionados abaixo da Fila & Atendimentos) */}
         <div className="space-y-3 pb-6">
-          {/* 1. Grupo: Metas & Turnos (Unidos Lado a Lado) */}
+          {/* 1. Seção: Caixa Operacional (Dia & Semana - Entradas vs Metas) */}
+          <div className="space-y-1.5">
+            <CaixaDailyWeeklyCard
+              appointments={appointments}
+              matchesSelectedPro={matchesSelectedPro}
+              onNavigateToUtilitiesFinancial={() => onNavigateTab('utilidades')}
+            />
+          </div>
+
+          {/* 2. Grupo: Metas & Turnos */}
           <div className="space-y-1.5">
             {/* Cabeçalho do Grupo de Metas & Turnos */}
             <div className="flex items-center justify-between px-0.5">
@@ -1213,32 +1222,6 @@ export const ProfessionalDashboardView: React.FC<ProfessionalDashboardViewProps>
               selectedFilterPro={selectedFilterPro}
               matchesSelectedPro={matchesSelectedPro}
               onUpdateTarget={handleUpdateTarget}
-            />
-          </div>
-
-          {/* 2. Grupo: Resumo Financeiro */}
-          <div className="space-y-1.5">
-            {/* Cabeçalho do Grupo de Resumo Financeiro */}
-            <div className="flex items-center justify-between px-0.5">
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                  <DollarSign className="w-3 h-3 text-emerald-400" />
-                </div>
-                <span className="text-xs font-bold font-['Poppins']">
-                  Resumo Financeiro
-                </span>
-              </div>
-            </div>
-
-            {/* 4 Números de Ouro em Linguagem Direta */}
-            <QuickFinancialCards
-              realizedRevenue={financialQuickSummary.realizedRevenue}
-              completedCount={financialQuickSummary.completedCount}
-              forecastRevenue={financialQuickSummary.forecastRevenue}
-              pendingCount={financialQuickSummary.pendingCount}
-              averageTicket={financialQuickSummary.averageTicket}
-              netProfitOrCommission={financialQuickSummary.netProfitOrCommission}
-              isOwner={financialQuickSummary.isOwner}
             />
           </div>
         </div>

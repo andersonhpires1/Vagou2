@@ -1,12 +1,12 @@
 import React from 'react';
-import { Home, Calendar, LayoutDashboard, DollarSign, Scissors, Users, Store, Wrench } from 'lucide-react';
+import { Home, Calendar, LayoutDashboard, DollarSign, Scissors, Users, Store, Wrench, Wallet } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { hapticLight } from '../utils/haptics';
 import { UserPersona } from '../types';
 
 export interface SalonNavContext {
-  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
-  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
+  activeTab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades';
+  onSelectTab: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
@@ -18,8 +18,8 @@ export interface SalonNavContext {
 
 interface BottomNavProps {
   salonContext?: SalonNavContext | null;
-  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
-  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades') => void;
+  activeTab?: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades';
+  onSelectTab?: (tab: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades') => void;
   ServicesIcon?: React.ComponentType<{ className?: string }>;
   SpaceIcon?: React.ComponentType<{ className?: string }>;
   spaceTabLabel?: string;
@@ -62,7 +62,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   }
 
   let establishmentTabs: Array<{
-    id: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'personalizar' | 'utilidades';
+    id: 'home' | 'servicos' | 'vagas' | 'espaco' | 'equipe' | 'financeiro' | 'caixa' | 'personalizar' | 'utilidades';
     label: string;
     icon: React.ComponentType<{ className?: string }>;
   }> = [];
@@ -71,15 +71,15 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     if (isProAdmin) {
       establishmentTabs = [
         { id: 'home', label: 'Painel', icon: LayoutDashboard },
+        { id: 'caixa', label: 'Caixa', icon: Wallet },
         { id: 'vagas', label: vagasTabLabel, icon: Calendar },
-        { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
         { id: 'utilidades', label: 'Utilidades', icon: Wrench },
       ];
     } else {
       establishmentTabs = [
         { id: 'home', label: 'Painel', icon: LayoutDashboard },
+        { id: 'caixa', label: 'Caixa', icon: Wallet },
         { id: 'vagas', label: vagasTabLabel, icon: Calendar },
-        { id: 'financeiro', label: 'Comissões', icon: DollarSign },
         { id: 'utilidades', label: 'Utilidades', icon: Wrench },
       ];
     }
